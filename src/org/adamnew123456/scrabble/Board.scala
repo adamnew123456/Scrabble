@@ -1,6 +1,6 @@
 package org.adamnew123456.scrabble
 
-import scala.collection.mutable.{MutableList, HashSet, Queue}
+import scala.collection.mutable.{MutableList, HashSet, Queue, HashMap}
 import scala.util.{Try, Success, Failure}
 
 
@@ -66,6 +66,64 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
       }
       
       Success(new Board(board ++ characters, width, height))
+    }
+  }
+  
+  /**
+   * Adds a word to a given position on the board.
+   * 
+   * Note that this will happily put a tile onto another tile, as long as they
+   * are the same. It will only raise an error if the tile on the board differs
+   * from its corresponding tile in the input, or if the word is too large to
+   * fit on the board.
+   * 
+   * For example, take this board:
+   * 
+   *   a b c d e
+   * 1 _ _ _ _ _
+   * 2 _ _ _ _ _
+   * 3 r a t _ _
+   * 4 _ _ _ _ _
+   * 5 _ _ _ _ _
+   * 
+   * If we want to add the word "star" starting at c2 and going down, then
+   * this method would be called as:
+   * 
+   *   addWord("star", (2, 1), Direction.Vertical)
+   */
+  def addWord(word: String, location: (Int, Int), direction: Direction.Type): Try[Board] = {
+    // This moves the location ahead for each character in the word
+    def ahead(loc: (Int, Int)) = (loc, direction) match {
+      case ((col, row), Direction.Vertical) => (col, row + 1)
+      case ((col, row), Direction.Horizontal) => (col + 1, row)
+    }
+    
+    // Figure out if the word is too long to fit on the board
+    val endOfWord = (location, direction) match {
+      case ((col, row), Direction.Vertical) => (col, row + (word.length - 1))
+      case ((col, row), Direction.Horizontal) => (col + (word.length - 1), row)
+    }
+    
+    if (endOfWord._1 >= width || endOfWord._1 < 0 ||
+        endOfWord._2 >= height || endOfWord._2 < 0) {
+      Failure(NotOnBoardError(this, endOfWord))
+    } else {
+      val newBoard = new HashMap[(Int, Int), Char]()
+      newBoard ++= board
+      
+      // Go through each character in the word, and figure out if it overlaps
+      // with a tile on the board, that is not the same as the character.
+      word.toList.foldLeft(location) { 
+        (position: (Int, Int), letter: Char) =>
+          if (board.contains(position) && board(position) != letter) {
+            return Failure(DuplicateTilesError(this, Set(position)))
+          } else {
+            newBoard(position) = letter
+            ahead(position)
+          }
+      }
+      
+      Success(new Board(newBoard.toMap, width, height))
     }
   }
   
