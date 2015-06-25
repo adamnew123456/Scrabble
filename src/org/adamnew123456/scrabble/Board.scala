@@ -3,7 +3,6 @@ package org.adamnew123456.scrabble
 import scala.collection.mutable.{MutableList, HashSet, Queue, HashMap}
 import scala.util.{Try, Success, Failure}
 
-
 /**
  * An Exception which is thrown when somebody attempts to add characters to a
  * board which already has characters in the same location.
@@ -190,6 +189,9 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
     def addDirection(seq: Seq[(Int, Int)], direction: Direction.Type) =
       seq.map {case (col, row) => (col, row, direction)}
     
+    /**
+     * Starts at a tile, and finds the horizontal word occupying it.
+     */
     def visitHorizontal(location: (Int, Int)) {
       val (col, row) = location
       
@@ -209,7 +211,7 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
        *           ^-- start here again
        *         
        *     _ c a r r o t _
-       *           >->->-> 
+       *           >->->-|
        *           similar process to that in the second step, but work our
        *           way right until we hit a blank
        */
@@ -232,6 +234,9 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
       toVisit ++= addDirection(searchableTiles(bottomTiles), Direction.Vertical)
     }
     
+    /**
+     * Starts at a tile, and finds the vertical word occupying it.
+     */
     def visitVertical(location: (Int, Int)) {
       val (col, row) = location
       
