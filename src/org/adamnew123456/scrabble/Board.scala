@@ -8,12 +8,16 @@ import scala.util.{Try, Success, Failure}
  * An Exception which is thrown when somebody attempts to add characters to a
  * board which already has characters in the same location.
  */
-case class DuplicateTilesError(board: Board, tiles: Set[(Int, Int)]) extends Exception
+case class DuplicateTilesError(tiles: Set[(Int, Int)]) extends Exception {
+  override def toString = s"DuplicateTilesError(${tiles.mkString("; ")})"
+}
 
 /**
  * An Exception which is thrown when an invalid Board coordinate is received.
  */
-case class NotOnBoardError(board: Board, location: (Int, Int)) extends Exception
+case class NotOnBoardError(col: Int, row: Int) extends Exception {
+  override def toString = s"NotOnBoardError($col, $row)"
+}
 
 /**
  * A direction on the board - vertical means top-down, while horizontal means
@@ -53,15 +57,15 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
   def addCharacters(characters: Map[(Int, Int), Char]): Try[Board] = {
     val overlappingCharacters = characters.keySet.intersect(board.keySet)
     if (!overlappingCharacters.isEmpty) {
-      Failure(DuplicateTilesError(this, overlappingCharacters))
+      Failure(DuplicateTilesError(overlappingCharacters))
     } else {
       // Ensure that all of the characters we're adding are valid coordinates
       // for this particular board
       characters.foreach { case ((col, row), _) =>
         if (row < 0 || row >= width) {
-          return Failure(NotOnBoardError(this, (col, row)))
+          return Failure(NotOnBoardError(col, row))
         } else if (col < 0 || col >= height) {
-          return Failure(NotOnBoardError(this, (col, row)))
+          return Failure(NotOnBoardError(col, row))
         }
       }
       
@@ -106,7 +110,7 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
     
     if (endOfWord._1 >= width || endOfWord._1 < 0 ||
         endOfWord._2 >= height || endOfWord._2 < 0) {
-      Failure(NotOnBoardError(this, endOfWord))
+      Failure(NotOnBoardError(endOfWord._1, endOfWord._2))
     } else {
       val newBoard = new HashMap[(Int, Int), Char]()
       newBoard ++= board
@@ -116,7 +120,7 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
       word.toList.foldLeft(location) { 
         (position: (Int, Int), letter: Char) =>
           if (board.contains(position) && board(position) != letter) {
-            return Failure(DuplicateTilesError(this, Set(position)))
+            return Failure(DuplicateTilesError(Set(position)))
           } else {
             newBoard(position) = letter
             ahead(position)

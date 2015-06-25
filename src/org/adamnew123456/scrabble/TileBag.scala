@@ -8,7 +8,9 @@ import scala.util.{Try, Success, Failure, Random}
  * available.
  */
 case class NoTilesError(tilesRequested: Int, tilesLeft: Int)
-  extends Exception
+  extends Exception {
+  override def toString = s"NoTilesError(requested: $tilesRequested, left: $tilesLeft)"
+}
 
 /**
  * The tile bag is responsible for holding the tiles in the game. It starts

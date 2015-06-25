@@ -5,7 +5,9 @@ import scala.util.{Try, Success, Failure}
 /**
  * This is an error raised when an invalid word is scored.
  */
-case class NoSuchWordError(word: String) extends Exception
+case class NoSuchWordError(word: String) extends Exception {
+  override def toString = s"NoSuchWordError($word)"
+}
 
 /**
  * This is responsible for checking whether words are valid, and scoring
