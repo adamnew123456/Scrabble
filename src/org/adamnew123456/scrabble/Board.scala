@@ -47,6 +47,22 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
   def apply(column: Int, row: Int): Option[Char] = board.get((column, row))
   
   /**
+   * Creates a string representation of a board.
+   */
+  override def toString: String = {
+    val rows = 0.to(height - 1).map { row => 
+      0.to(width - 1).map { column =>
+        this(column, row) match {
+          case None       => "_"
+          case Some(tile) => tile
+        }
+      }
+    }
+    
+    rows.map(_.mkString(" ")).mkString("\n")
+  }
+  
+  /**
    * Adds characters to the board, producing a new Board.
    * 
    * Note that this will fail if characters in the input share the same
