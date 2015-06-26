@@ -200,9 +200,6 @@ class BoardTest extends TestCase {
         }
     }
     
-    println("---> Board")
-    println(board)
-    
     assertTrue(board.isConnected)
   }
   
