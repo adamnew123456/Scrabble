@@ -68,6 +68,10 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
    * Note that this will fail if characters in the input share the same
    * location as they do in the board (that is, the caller attempts to
    * put two tiles on the same square).
+   * 
+   * This does not check to see if the characters added connect with anything
+   * else - this is a low level function, used mostly for testing. addWords is
+   * the higher level equivalent.
    */
   def addCharacters(characters: Map[(Int, Int), Char]): Try[Board] = {
     val overlappingCharacters = characters.keySet.intersect(board.keySet)
@@ -144,6 +148,50 @@ class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
       
       Success(new Board(newBoard.toMap, width, height))
     }
+  }
+  
+  /**
+   * This checks to see if there are any tiles which are not connected to
+   * another tile.
+   */
+  def isConnected: Boolean = {
+    val connected = new HashSet[(Int, Int)]()
+    val toVisit = Queue[(Int, Int)]()
+    
+    // Traverse the board, starting from the center and going outward
+    if (board.contains((width / 2, height / 2))) {
+      toVisit.enqueue((width / 2, height / 2))
+    }
+    
+    while (!toVisit.isEmpty) {
+      val visiting = toVisit.dequeue
+      
+      if (!connected.contains(visiting)) {
+        connected += visiting
+        
+        val (col, row) =  visiting
+        
+        if (board.contains((col - 1, row))) {
+          toVisit.enqueue((col - 1, row))
+        }
+        
+        if (board.contains((col + 1, row))) {
+          toVisit.enqueue((col + 1, row))
+        }
+        
+        if (board.contains((col, row - 1))) {
+          toVisit.enqueue((col, row - 1))
+        }
+        
+        if (board.contains((col, row + 1))) {
+          toVisit.enqueue((col, row + 1))
+        }
+      }
+    }
+    
+    // If there is anything we didn't find after traversal, then it isn't
+    // properly attached
+    board.keys.forall(connected.contains(_))
   }
   
   /**

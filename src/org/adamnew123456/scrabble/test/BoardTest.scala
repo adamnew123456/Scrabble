@@ -170,4 +170,54 @@ class BoardTest extends TestCase {
 
     assertEquals(words, expectedWords)
   }
+  
+  /**
+   * Ensure that the isConnected function returns true as long as all the tiles
+   * are somehow connected to the center tile.
+   */
+  def testIsConnected() {
+    /**
+     * Recreate the board from the testWords test, since it is complex enough
+     * to ensure that isConnected works in all situations.
+     */
+    val wordsToAdd = Map(
+      (3, 1, Direction.Horizontal) -> "cot",
+      (2, 3, Direction.Horizontal) -> "ship",
+      (4, 5, Direction.Horizontal) -> "red",
+      (5, 6, Direction.Horizontal) -> "do",
+      (5, 1, Direction.Vertical) -> "tapped",
+      (6, 5, Direction.Vertical) -> "do")
+      
+    board = wordsToAdd.foldLeft(board) {
+      (oldBoard: Board, posDirWord: ((Int, Int, Direction.Type), String)) =>
+        val ((col, row, dir), word) = posDirWord
+        oldBoard.addWord(word, (col, row), dir) match {
+          case Success(newBoard) => newBoard
+          case Failure(exn) =>
+            fail(s"Unexpected exception: $exn")
+            // We can't hit this, but the typechecker doesn't know that
+            null
+        }
+    }
+    
+    println("---> Board")
+    println(board)
+    
+    assertTrue(board.isConnected)
+  }
+  
+  /**
+   * Ensure that adding a character on the board that is disconnected doesn't
+   * work.
+   */
+  def testNotIsConnected() {
+    board = board.addCharacters(Map((0, 0) -> 'a')) match {
+      case Success(newBoard) => newBoard
+      case Failure(exn) => 
+        fail(s"Unexpected exception: $exn")
+        null // Appease the type checker
+    }
+    
+    assertFalse(board.isConnected)
+  }
 }
