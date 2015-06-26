@@ -2,7 +2,6 @@ package org.adamnew123456.scrabble.test
 
 import scala.util.{Try, Success, Failure}
 
-
 import org.adamnew123456.scrabble.{
   AbstractPlayer, Board, Direction, NoTileInHandError, NoTilesError, TileBag}
 
@@ -11,7 +10,7 @@ import junit.framework.TestCase
 import org.junit.Assert._
 
 class DummyPlayer(tileBag: TileBag) extends AbstractPlayer(tileBag) {
-  def doTurn(board: Board): Map[(Int, Int, Direction.Type), String] = Map()
+  def doTurn(board: Board): Map[(Int, Int), Char] = Map()
 }
 
 /**

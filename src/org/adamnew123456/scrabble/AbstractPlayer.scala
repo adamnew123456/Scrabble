@@ -24,10 +24,10 @@ abstract class AbstractPlayer(tileBag: TileBag) {
   }
   
   /**
-   * This executes the turn, producing a map of words to add at the given
-   * positions.
+   * This executes the turn, producing a map of the characters to add to the
+   * board.
    */
-  def doTurn(board: Board): Map[(Int, Int, Direction.Type), String]
+  def doTurn(board: Board): Map[(Int, Int), Char]
   
   /**
    * Adds the turn's score to the player's overall score.
