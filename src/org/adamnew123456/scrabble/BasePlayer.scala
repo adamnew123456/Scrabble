@@ -20,7 +20,7 @@ case class NoTileInHandError(tile: Char) extends Exception {
  * - Executing a turn with a given board and rack of tiles, returning a map
  *   of characters to add to the board.
  */
-trait BasePlayer {
+abstract class BasePlayer(name: String, game: Config) {
   /**
    * This determines whether or not the game should replace some of the
    * player's tiles with tiles drawn from the bag.
@@ -38,15 +38,15 @@ trait BasePlayer {
    * Note that providing an invalid set of moves will result in this function
    * being called again, on the same turn.
    */
-  def turn(game: Config, board: Board, tiles: List[Char]): Map[(Int, Int), Char]
+  def turn(board: Board, tiles: List[Char]): Map[(Int, Int), Char]
   
   /**
    * This is executed at the beginning of a turn.
    */
-  def startTurn(board: Board, tiles: List[Char], score: Int): Unit
+  def startTurn(board: Board, tiles: List[Char], score: Map[String, Int]): Unit
   
   /**
    * This is executed at the end of a turn.
    */
-  def endTurn(board: Board, tiles: List[Char], score: Int): Unit
+  def endTurn(board: Board, tiles: List[Char], score: Map[String, Int]): Unit
 }
