@@ -40,7 +40,7 @@ case class Word(text: String, orientation: Direction.Type, start: (Int, Int))
  * the board - note that these words are not guaranteed to be valid,
  * they have to be checked.
  */
-class Board(board: Map[(Int, Int), Char], width: Int, height: Int) {
+class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
   /**
    * Gets the character on the board at the given location, or None.
    */
