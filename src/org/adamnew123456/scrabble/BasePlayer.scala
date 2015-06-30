@@ -20,7 +20,7 @@ case class NoTileInHandError(tile: Char) extends Exception {
  * - Executing a turn with a given board and rack of tiles, returning a map
  *   of characters to add to the board.
  */
-abstract class BasePlayer(name: String, game: Config) {
+abstract class BasePlayer(name: String, game: Config, scorer: WordScorer) {
   /**
    * This determines whether or not the game should replace some of the
    * player's tiles with tiles drawn from the bag.

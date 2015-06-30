@@ -6,20 +6,19 @@ import scala.annotation.tailrec
 import scala.collection.mutable.HashMap
 import scala.io.{AnsiColor, Source}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config}
+import org.adamnew123456.scrabble.{BasePlayer, Board, Config, WordScorer}
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
  * This is a player which interacts via a terminal, using basic 
  */
-class TerminalPlayer(name: String, game: Config) extends BasePlayer(name, game) {
+class TerminalPlayer(name: String, game: Config, scorer: WordScorer) 
+ extends BasePlayer(name, game, scorer) {
   var previousScore = 0
   val inputStream = Source.stdin.getLines
   
-  // The color scheme used for printing
-  
   /**
-   * Pads a string on the left
+   * Pads a string on the left. Useful for formatting the board as a table.
    */
   private def leftJustify(text: String, length: Int, elem: Char = ' '): String =
     text.reverse.padTo(length, elem).reverse
@@ -99,7 +98,7 @@ class TerminalPlayer(name: String, game: Config) extends BasePlayer(name, game) 
   }
   
   def turn(board: Board, tiles: List[Char]): Map[(Int, Int), Char] = {
-    val processor = new TerminalCommandProcessor(this, board, game, tiles)
+    val processor = new TerminalCommandProcessor(this, board, game, scorer, tiles)
     
     @tailrec
     def runCommand: Map[(Int, Int), Char] = {

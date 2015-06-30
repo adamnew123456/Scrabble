@@ -4,7 +4,7 @@ import scala.collection.mutable.HashMap
 import scala.io.AnsiColor
 import scala.util.{Success, Failure}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config, Direction, Word}
+import org.adamnew123456.scrabble.{BasePlayer, Board, Config, Direction, Word, WordScorer}
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -26,7 +26,9 @@ case class TerminalCommand(name: String, args: List[String], help: String, fn: L
  *   Submit to game:      s
  *   Help:                h
  */
-class TerminalCommandProcessor(player: TerminalPlayer, board: Board, game: Config, tiles: List[Char]) {
+class TerminalCommandProcessor(player: TerminalPlayer, board: Board, 
+                               game: Config, scorer: WordScorer, 
+                               tiles: List[Char]) {
   var isDone = false
   
   val boardAdditions = new HashMap[(Int, Int), Char]
@@ -273,21 +275,19 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board, game: Confi
                     
     TerminalCommand("p", Nil, "Shows points added this turn",
                     {args: List[String] =>
-                      val oldWords = board.findWords
+                      val oldWords = board.findWords.map(_.text)
                       
                       val points = board.addCharacters(boardAdditions.toMap) match {
                         case Success(newBoard) =>
-                          val newWords = newBoard.findWords
-                          val addedWords = newWords.diff(oldWords)
+                          val newWords = newBoard.findWords.map(_.text)
+                          val addedWords = scorer.computeModifiedWords(oldWords, newWords)
                           
-                          // The score is the sum of the new word's scores, 
-                          // which is itself the sum of the score of each word's
-                          // letter
-                          val score = addedWords.map { word: Word =>
-                            val wordText = word.text
-                            wordText.map {c: Char => game.letterScores(c)}.sum
-                          }.sum
-                        
+                          scorer.computeTurnScore(addedWords) match {
+                            case Success(points) => points
+                            case Failure(exn) => 
+                              println(s"Error: $exn")
+                              0
+                          }
                         case Failure(exn) =>
                           println(s"Error: $exn")
                           0
