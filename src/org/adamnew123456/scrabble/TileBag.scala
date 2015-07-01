@@ -13,6 +13,47 @@ case class NoTilesError(tilesRequested: Int, tilesLeft: Int)
 }
 
 /**
+ * A group of tiles. Internally, this is represented as a Map[Char, Int], but
+ * it can be converted for convenience.
+ */
+class TileGroup(tiles: Map[Char, Int]) {
+  /**
+   * Gets this TileGroup as a list of tiles.
+   */
+  def asList: List[Char] =
+    tiles.flatMap { case (tile, count) =>
+      List.fill(count)(tile)
+    }.toList
+    
+  /**
+   * Get this TileGroup as a map of tile -> count.
+   */
+  def asMap: Map[Char, Int] = tiles
+  
+  /**
+   * Gets the number of tiles in this group.
+   */
+  def size = tiles.values.sum
+}
+
+object TileGroup {
+  /**
+   * Makes a tile group from a list of tiles.
+   */
+  def fromTraversable(in: Traversable[Char]): TileGroup = {
+    // [a, b, a] --> {a -> [a, a], b -> [b]}
+    val countedTiles = in.groupBy {tile: Char => tile }.mapValues(_.size)
+    new TileGroup(countedTiles)
+  }
+  
+  /**
+   * Makes a tile group from a map of tile -> count.
+   */
+  def fromMap(in: Map[Char, Int]): TileGroup =
+    new TileGroup(in)
+}
+
+/**
  * The tile bag is responsible for holding the tiles in the game. It starts
  * off with a particular distribution of tiles, and can then have tiles taken
  * out, or swapped.
@@ -37,18 +78,14 @@ class TileBag(tileDistribution: Map[Char, Int]) {
    * Draws the given number of tiles out of the bag. If there are too few, then
    * this produces a NoTilesError.
    */
-  def drawTiles(numTiles: Int): Try[List[Char]] = {
+  def drawTiles(numTiles: Int): Try[TileGroup] = {
     if (numTiles > tilesLeft) {
       Failure(NoTilesError(numTiles, tilesLeft))
     } else {
-      val tilesToRemove = (1 to numTiles).map { _ =>
+      val drawnTiles = (1 to numTiles).map { _ =>
         val tilesCounts = tiles.toList
         
-        /*
-         *  Rather than having to deal with a list of (tile, count) pairs, go 
-         *  ahead and expand the list so that way we can do clean indexing.
-         */
-        val expandedTiles = tiles.flatMap {case (tile, times) => List.fill(times)(tile)}
+        val expandedTiles = TileGroup.fromMap(tiles.toMap).asList
         val shuffledTiles = randomGen.shuffle(expandedTiles).toList
         
         val tileIndex = Math.abs(randomGen.nextInt % shuffledTiles.length)
@@ -57,7 +94,7 @@ class TileBag(tileDistribution: Map[Char, Int]) {
         letterPicked
       }
       
-      Success(tilesToRemove.toList)
+      Success(TileGroup.fromTraversable(drawnTiles))
     }
   }
   
@@ -66,11 +103,11 @@ class TileBag(tileDistribution: Map[Char, Int]) {
    * the new tiles are pulled out before the old, to avoid getting the very
    * same tiles as before.
    */
-  def replaceTiles(toReplace: List[Char]): Try[List[Char]] = {
-    if (toReplace.length > tilesLeft) {
-      Failure(NoTilesError(toReplace.length, tilesLeft))
+  def replaceTiles(toReplace: TileGroup): Try[TileGroup] = {
+    if (toReplace.size > tilesLeft) {
+      Failure(NoTilesError(toReplace.size, tilesLeft))
     } else {
-      val tilesToReturn = drawTiles(toReplace.length) match {
+      val tilesToReturn = drawTiles(toReplace.size) match {
         case Success(tiles) => tiles
         
         // This cannot fail - the only way for this to occur is if there aren't
@@ -79,7 +116,7 @@ class TileBag(tileDistribution: Map[Char, Int]) {
         case Failure(_) => null
       }
       
-      toReplace.foreach(tiles(_) += 1)
+      toReplace.asList.foreach(tiles(_) += 1)
       Success(tilesToReturn)
     }
   }

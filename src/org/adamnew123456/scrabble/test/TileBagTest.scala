@@ -2,7 +2,7 @@ package org.adamnew123456.scrabble.test
 
 import scala.util.{Try, Success, Failure}
 
-import org.adamnew123456.scrabble.{TileBag, NoTilesError}
+import org.adamnew123456.scrabble.{TileBag, TileGroup, NoTilesError}
 
 import org.junit.Test
 import junit.framework.TestCase
@@ -51,8 +51,14 @@ class TileBagTest extends TestCase {
         null
     }
     
-    assertEquals(tilesA.toSet, tilesB.toSet)
-    assertNotEquals(tilesA, tilesB)
+    val aOrdered = tilesA.asList
+    val bOrdered = tilesB.asList
+    
+    val aUnordered = aOrdered.toSet
+    val bUnordered = bOrdered.toSet
+    
+    assertEquals(aUnordered, bUnordered)
+    assertNotEquals(aOrdered, bOrdered)
   }
   
   /**
@@ -89,7 +95,8 @@ class TileBagTest extends TestCase {
     assertEquals(bag.tilesLeft, 1)
     
     // Put one into the bag, and ensure we get that one out
-    bag.replaceTiles(List('a')) match {
+    val toReplace = TileGroup.fromTraversable(List('a'))
+    bag.replaceTiles(toReplace) match {
       case Success(tiles) => tiles
       case Failure(exn) =>
         fail(s"Unexpected exception: $exn")
@@ -114,7 +121,7 @@ class TileBagTest extends TestCase {
   def testReplaceTooMany() {
     val numReplace = numTiles * 2
     val overflow = numReplace - numTiles
-    val toReplace = List.fill(numReplace)('x')
+    val toReplace = TileGroup.fromTraversable(List.fill(numReplace)('x'))
     
     bag.replaceTiles(toReplace) match {
       case Success(_) => fail("Expected NoTilesError")
