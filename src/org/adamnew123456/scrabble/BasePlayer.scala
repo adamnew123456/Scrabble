@@ -20,7 +20,7 @@ case class NoTileInHandError(tile: Char) extends Exception {
  * - Executing a turn with a given board and rack of tiles, returning a map
  *   of characters to add to the board.
  */
-abstract class BasePlayer(name: String, game: Config, scorer: WordScorer) {
+abstract class BasePlayer(val name: String, game: Config, scorer: WordScorer) {
   /**
    * This determines whether or not the game should replace some of the
    * player's tiles with tiles drawn from the bag.
@@ -29,7 +29,7 @@ abstract class BasePlayer(name: String, game: Config, scorer: WordScorer) {
    * called again, on the same turn. If there aren't any tiles to replace,
    * then this function will not get called.
    */
-  def replaceTiles(tiles: List[Char]): List[Char]
+  def replaceTiles(tiles: TileGroup): TileGroup
   
   /**
    * This executes the turn, producing a map of the characters to add to the
@@ -38,15 +38,15 @@ abstract class BasePlayer(name: String, game: Config, scorer: WordScorer) {
    * Note that providing an invalid set of moves will result in this function
    * being called again, on the same turn.
    */
-  def turn(board: Board, tiles: List[Char]): Map[(Int, Int), Char]
+  def turn(board: Board, tiles: TileGroup): Map[(Int, Int), Char]
   
   /**
    * This is executed at the beginning of a turn.
    */
-  def startTurn(board: Board, tiles: List[Char], score: Map[String, Int]): Unit
+  def startTurn(board: Board, tiles: TileGroup, score: Map[String, Int]): Unit
   
   /**
    * This is executed at the end of a turn.
    */
-  def endTurn(board: Board, tiles: List[Char], score: Map[String, Int]): Unit
+  def endTurn(board: Board, tiles: TileGroup, score: Map[String, Int]): Unit
 }

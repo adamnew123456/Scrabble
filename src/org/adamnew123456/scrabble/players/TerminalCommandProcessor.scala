@@ -4,7 +4,7 @@ import scala.collection.mutable.HashMap
 import scala.io.AnsiColor
 import scala.util.{Success, Failure}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config, Direction, Word, WordScorer}
+import org.adamnew123456.scrabble.{BasePlayer, Board, Config, Direction, NotInTileGroup, TileGroup, Word, WordScorer}
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -28,20 +28,11 @@ case class TerminalCommand(name: String, args: List[String], help: String, fn: L
  */
 class TerminalCommandProcessor(player: TerminalPlayer, board: Board, 
                                game: Config, scorer: WordScorer, 
-                               tiles: List[Char]) {
+                               currentTiles: TileGroup) {
   var isDone = false
   
   val boardAdditions = new HashMap[(Int, Int), Char]
-  val tileCounts = new HashMap[Char, Int]
-  
-  // Record all the tiles, by number
-  tiles.foreach {tile: Char => 
-    if (!tileCounts.contains(tile)) {
-      tileCounts(tile) = 0
-    }
-    
-    tileCounts(tile) += 1
-  }
+  var tiles = currentTiles
   
   /**
    * A safer version of toInt, which wraps exceptions in Option[T].
@@ -95,26 +86,18 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
       wordCounts(char) += 1
     }
     
-    // Ensure that all of the characters in the word count can be drawn from
-    // the player's rack
-    val invalidTiles = wordCounts.filter {
-      case (char, count) => !tileCounts.contains(char) || tileCounts(char) < count
-    }
-    
-    if (invalidTiles.isEmpty) {
-      // Remove the tiles, since we know this won't end up putting the rack in
-      // an invalid state
-      wordCounts.foreach { case (tile, count) =>
-        tileCounts(tile) -= count
-      }
-      
-      Left(())
-    } else {
-      val coloredTiles = invalidTiles.keys.map {
-        tile: Char => s"${RackTile}$tile${AnsiColor.RESET}"
-      }
-      
-      Right(s"You don't have enough of the following tiles: ${coloredTiles.mkString(", ")}")
+    val toRemove = TileGroup.fromMap(wordCounts.toMap)
+    tiles.remove(toRemove) match {
+      case Success(newGroup) =>
+        tiles = newGroup
+        Left(())
+      case Failure(NotInTileGroup(leftovers)) =>
+        val coloredTiles = leftovers.asList.map { tile: Char =>
+          s"{RackTile}$tile${AnsiColor.RESET}"
+        }
+        
+        Right(s"You lack the following tiles: ${coloredTiles.mkString(", ")}")
+      case Failure(exn) => Right(s"Error: $exn")
     }
   }
   
@@ -123,20 +106,14 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
       location: (Int, Int), 
       direction: Direction.Type, 
       word: String): Either[Unit, String] = {
-    // Note: Part of adding the word to the board is removing the necessary
-    // tiles from the player's rack. For this reason, we have to keep a running
-    // total of what tiles still remain.
-    //
-    // The tile counts are copied because, if it turns out this word can't be
-    // added, we don't want to trash the good tile state. Same with the board.
-    val tempTileCounts = tileCounts.clone
+    var tempTiles = tiles
     val tempBoardAdditions = boardAdditions.clone
     
     // The location here is not in the standard (column, row) because the user
     // enters it as (row, colum)
     var (startRow, startCol) = location
     
-    val tiles = (if (direction == Direction.Horizontal) {
+    val wordTiles = (if (direction == Direction.Horizontal) {
       for (col <- startCol.to(startCol + word.length)) 
         yield (col, startRow)
     } else {
@@ -146,12 +123,12 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     
     // If the final tile in the sequence is off the board, then the word
     // is too long
-    val (lastCol, lastRow) = tiles.last
+    val (lastCol, lastRow) = wordTiles.last
     if (lastCol >= board.width || lastRow >= board.height) {
       return Right(s"'${word}' is too long to fit on the board")
     }
     
-    tiles.zip(word).foreach {
+    wordTiles.zip(word).foreach {
       case ((col, row), tile) =>
         // If the tile overlaps with the board, and it isn't the same, then 
         var removeTileFromRack = true
@@ -179,10 +156,10 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
         // Ensure that the tile is actually in the player's rack, if we
         // really have to use it
         if (removeTileFromRack) {
-          if (tempTileCounts(tile) == 0) {
-            return Right(s"Not enough ${RackTile}$tile{AnsiColor.RESET} tiles.")
-          } else {
-            tempTileCounts(tile) -= 1
+          tempTiles = tempTiles.remove(TileGroup.fromTraversable(List(tile))) match {
+            case Success(remaining) => remaining
+            case Failure(_) => 
+              return Right(s"Not enough ${RackTile}$tile${AnsiColor.RESET} tiles.")
           }
         }
         
@@ -192,7 +169,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     
     // If we've gotten this far, then we can update the board and the rack
     boardAdditions ++= tempBoardAdditions
-    tileCounts ++= tempTileCounts
+    tiles = tempTiles
     
     Left(())
   }
@@ -249,7 +226,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                               Right(s"${row + 1}, ${col + 1} is empty")
                             } else {
                               val tile = boardAdditions((col, row))
-                              tileCounts(tile) += 1
+                              tiles = tiles.merge(TileGroup.fromTraversable(List(tile)))
                               boardAdditions.remove((col, row))
                               
                               Left()
@@ -265,9 +242,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                     
     TerminalCommand("r", Nil, "Lists the tiles on your rack",
                     {args: List[String] =>
-                      // Expand the from a (tile -> count) map to a list of tiles
-                      val tiles = tileCounts.flatMap {case (tile, count) => List.fill(count)(tile)}
-                      tiles.foreach { tile: Char =>
+                      tiles.asList.foreach { tile: Char =>
                         print(s"${RackTile}$tile${AnsiColor.RESET} ")
                       }
                       println()

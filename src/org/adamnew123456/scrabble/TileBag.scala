@@ -13,10 +13,28 @@ case class NoTilesError(tilesRequested: Int, tilesLeft: Int)
 }
 
 /**
+ * An exception for when somebody tries to remove tiles from a TileGroup that
+ * aren't there.
+ */
+case class NotInTileGroup(tiles: TileGroup) extends Exception {
+  override def toString = s"NotInTileGroup(${tiles.asList.mkString(" ")})"
+}
+
+/**
  * A group of tiles. Internally, this is represented as a Map[Char, Int], but
  * it can be converted for convenience.
  */
 class TileGroup(tiles: Map[Char, Int]) {
+  /**
+   * Checks to see if the tile group has one of the given type of tile.
+   */
+  val contains = tiles.contains(_)
+  
+  /**
+   * Counts the number of the given type of tile in the group.
+   */
+  val count = tiles(_)
+  
   /**
    * Gets this TileGroup as a list of tiles.
    */
@@ -34,6 +52,57 @@ class TileGroup(tiles: Map[Char, Int]) {
    * Gets the number of tiles in this group.
    */
   def size = tiles.values.sum
+  
+  /**
+   * Merges this TileGroup with another, to produce a TileGroup containing
+   * tiles from both groups.
+   */
+  def merge(other: TileGroup): TileGroup = {
+    val total = new HashMap[Char, Int]
+    
+    tiles.foreach { case (tile, count) =>
+      if (!total.contains(tile)) {
+        total(tile) = 0
+      }
+      
+      total(tile) += count
+    }
+    
+    other.asMap.foreach { case (tile, count) =>
+      if (!total.contains(tile)) {
+        total(tile) = 0
+      }
+      
+      total(tile) += count
+    }
+    
+    new TileGroup(total.toMap)
+  }
+    
+  /**
+   * Removes the contents of another TileGroup from this one.
+   */
+  def remove(other: TileGroup): Try[TileGroup] = {
+    val total = new HashMap[Char, Int]
+    total ++= tiles
+    
+    val nonexistentTiles = new HashMap[Char, Int]
+    
+    other.asMap.foreach { case (tile, count) =>
+      if (!total.contains(tile) || count > total(tile)) {
+        nonexistentTiles(tile) = count
+      } else {
+        total(tile) -= count
+      }
+    }
+    
+    if (nonexistentTiles.isEmpty) {
+      Success(new TileGroup(total.toMap))
+    } else {
+      val extraTiles = new TileGroup(nonexistentTiles.toMap)
+      Failure(NotInTileGroup(extraTiles))
+    }
+  }
 }
 
 object TileGroup {

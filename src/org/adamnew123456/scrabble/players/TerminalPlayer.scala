@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.HashMap
 import scala.io.{AnsiColor, Source}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config, WordScorer}
+import org.adamnew123456.scrabble.{BasePlayer, Board, Config, TileGroup, WordScorer}
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -72,32 +72,36 @@ class TerminalPlayer(name: String, game: Config, scorer: WordScorer)
     }
   }
   
-  def startTurn(board: Board, tiles: List[Char], scores: Map[String, Int]) {
-    printColoredBoard(board)
-    for ((name, score) <- scores)
-      
-      println(s"Score $name: ${Score}$score${AnsiColor.RESET}")
-      
+  def startTurn(board: Board, tiles: TileGroup, scores: Map[String, Int]) {
+    println(s"---== $name's Turn ==---")
     
-    val tileRack = tiles.mkString(" ")
+    printColoredBoard(board)
+    for ((name, score) <- scores) {
+      println(s"Score $name: ${Score}$score${AnsiColor.RESET}")
+    }
+    
+    val tileRack = tiles.asList.mkString(" ")
     println(s"Tiles: ${RackTile}$tileRack${AnsiColor.RESET}")
     
     previousScore = scores(name)
   }
   
-  def endTurn(board: Board, tiles: List[Char], scores: Map[String, Int]) {
+  def endTurn(board: Board, tiles: TileGroup, scores: Map[String, Int]) {
     val scoreDifference = scores(name) - previousScore
     println(s"You scored ${Score}$scoreDifference${AnsiColor.RESET} this turn")
   }
   
   
-  def replaceTiles(tiles: List[Char]): List[Char] = {
+  def replaceTiles(tiles: TileGroup): TileGroup = {
     val unsanatizedInputTiles = getInput(s"Tiles to replace:")
-    unsanatizedInputTiles.toList
-      .filter(!game.letterDistribution.keySet.contains(_))
+    
+    val isLetter = game.letterDistribution.keySet.contains(_)
+    val tileList = unsanatizedInputTiles.filter(!isLetter(_))
+    
+    TileGroup.fromTraversable(tileList)
   }
   
-  def turn(board: Board, tiles: List[Char]): Map[(Int, Int), Char] = {
+  def turn(board: Board, tiles: TileGroup): Map[(Int, Int), Char] = {
     val processor = new TerminalCommandProcessor(this, board, game, scorer, tiles)
     
     @tailrec
