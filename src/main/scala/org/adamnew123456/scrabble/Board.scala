@@ -328,3 +328,11 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
     words.toSet
   }
 }
+
+object Board {
+  /**
+   * Constructs a new, empty Board of the given size.
+   */
+  def empty(width: Int, height: Int): Board =
+    new Board(Map[(Int, Int), Char](), width, height)
+}

@@ -13,6 +13,7 @@ trait Config {
   val letterDistribution: Map[Char, Int]
   val letterScores: Map[Char, Int]
   val wordList: Trie[Char]
+  val rackSize: Int
 }
 
 /**
@@ -78,4 +79,5 @@ class ResourceConfig extends Config {
   val letterDistribution = loadLetterDistribution
   val letterScores = loadLetterScores
   val wordList = loadWordList
+  val rackSize = 7
 }

@@ -36,6 +36,15 @@ class TileGroup(tiles: Map[Char, Int]) {
   val count = tiles(_)
   
   /**
+   * Checks for equality between this and another TileGroup.
+   */
+  override def equals(other: Any) = other match {
+    case otherGroup: TileGroup =>
+      otherGroup.asMap == this.asMap
+    case _ => false
+  }
+  
+  /**
    * Gets this TileGroup as a list of tiles.
    */
   def asList: List[Char] =

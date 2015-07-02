@@ -17,6 +17,7 @@ case class NoTileInHandError(tile: Char) extends Exception {
  * - Reacting to the start and end of a turn.
  * - Requesting or rejecting an offer to replace any tiles that the player
  *   wants replaced.
+ *   
  * - Executing a turn with a given board and rack of tiles, returning a map
  *   of characters to add to the board.
  */
@@ -29,7 +30,7 @@ abstract class BasePlayer(val name: String, game: Config, scorer: WordScorer) {
    * called again, on the same turn. If there aren't any tiles to replace,
    * then this function will not get called.
    */
-  def replaceTiles(tiles: TileGroup): TileGroup
+  def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup
   
   /**
    * This executes the turn, producing a map of the characters to add to the
@@ -49,4 +50,9 @@ abstract class BasePlayer(val name: String, game: Config, scorer: WordScorer) {
    * This is executed at the end of a turn.
    */
   def endTurn(board: Board, tiles: TileGroup, score: Map[String, Int]): Unit
+  
+  /**
+   * This is executed at the end of the game.
+   */
+  def endGame(result: EndGame): Unit
 }

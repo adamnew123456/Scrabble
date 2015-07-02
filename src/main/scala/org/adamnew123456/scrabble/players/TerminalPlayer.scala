@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.HashMap
 import scala.io.{AnsiColor, Source}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config, TileGroup, WordScorer}
+import org.adamnew123456.scrabble.{BasePlayer, Board, Config, EndGame, TileGroup, WordScorer}
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -72,13 +72,19 @@ class TerminalPlayer(name: String, game: Config, scorer: WordScorer)
     }
   }
   
+  /**
+   * Prints out a score listing.
+   */
+  private def printScores(scores: Map[String, Int]) =
+    for ((name, score) <- scores) {
+      println(s"Score $name: ${Score}$score${AnsiColor.RESET}")
+    }
+  
   def startTurn(board: Board, tiles: TileGroup, scores: Map[String, Int]) {
     println(s"---== $name's Turn ==---")
     
     printColoredBoard(board)
-    for ((name, score) <- scores) {
-      println(s"Score $name: ${Score}$score${AnsiColor.RESET}")
-    }
+    printScores(scores)
     
     val tileRack = tiles.asList.mkString(" ")
     println(s"Tiles: ${RackTile}$tileRack${AnsiColor.RESET}")
@@ -91,9 +97,18 @@ class TerminalPlayer(name: String, game: Config, scorer: WordScorer)
     println(s"You scored ${Score}$scoreDifference${AnsiColor.RESET} this turn")
   }
   
+  def endGame(result: EndGame) {
+    println("--=== Game Over ===--")
+    
+    result match {
+      case EndGame(board, scores) =>
+        printColoredBoard(board)
+        printScores(scores)
+    }
+  }
   
-  def replaceTiles(tiles: TileGroup): TileGroup = {
-    val unsanatizedInputTiles = getInput(s"Tiles to replace:")
+  def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup = {
+    val unsanatizedInputTiles = getInput(s"Tiles to replace, max $maxReplace:")
     
     val isLetter = game.letterDistribution.keySet.contains(_)
     val tileList = unsanatizedInputTiles.filter(!isLetter(_))

@@ -29,36 +29,28 @@ class TileBagTest extends TestCase {
   }
   
   /**
-   * Ensure that drawing all the tiles from the bag results in a randomized
-   * output of the same distribution.
+   * Ensures that the random subsets drawn from the bag are different
+   * subsets.
    */
   def testDraw() {
     val clonedBag = new TileBag(tileDist)
     
-    val tilesA = bag.drawTiles(numTiles) match {
+    val tilesA = bag.drawTiles(numTiles / 2) match {
       case Success(tiles) => tiles
       case Failure(exn) => 
         fail(s"Unexpected exception: $exn")
-        null // This is necessary for type checking - otherwise, Scala will
-             // infer that the type of this block is Any, when it really should
-             // be List[Char]
+        null // Necessary for type checking - we want this to be inferred as
+             // TileGroup, not as Any
     }
     
-    val tilesB = clonedBag.drawTiles(numTiles) match {
+    val tilesB = clonedBag.drawTiles(numTiles / 2) match {
       case Success(tiles) => tiles
       case Failure(exn) => 
         fail(s"Unexpected exception: $exn")
         null
     }
     
-    val aOrdered = tilesA.asList
-    val bOrdered = tilesB.asList
-    
-    val aUnordered = aOrdered.toSet
-    val bUnordered = bOrdered.toSet
-    
-    assertEquals(aUnordered, bUnordered)
-    assertNotEquals(aOrdered, bOrdered)
+    assertNotEquals(tilesA, tilesB)
   }
   
   /**
@@ -82,15 +74,11 @@ class TileBagTest extends TestCase {
    * Ensure that tiles which are swapped can be drawn again.
    */
   def testSwap() {
-    println("** " + bag.tiles)
-    
     // Get rid of all tiles
     bag.drawTiles(numTiles - 1) match {
       case Success(_) => ()
       case Failure(exn) => fail(s"Unexpected exception: $exn")
     }
-    
-    println("++ " + bag.tiles)
     
     assertEquals(bag.tilesLeft, 1)
     
@@ -112,7 +100,7 @@ class TileBagTest extends TestCase {
         null
     }
     
-    assertEquals(tilesDrawn, List('a'))
+    assertEquals(tilesDrawn.asList, List('a'))
   }
   
   /**
