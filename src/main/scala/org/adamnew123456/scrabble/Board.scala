@@ -46,6 +46,11 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
    */
   def apply(column: Int, row: Int): Option[Char] = board.get((column, row))
   
+ /**
+  * Same as apply(), but uses tuples instead of two arguments.
+  */
+  val get = (apply _).tupled
+  
   /**
    * Creates a string representation of a board.
    */
