@@ -1,5 +1,6 @@
 package org.adamnew123456.scrabble
 
+import java.io.File
 import java.util.Scanner
 import scala.collection.mutable.HashMap
 
@@ -14,6 +15,48 @@ trait Config {
   val letterScores: Map[Char, Int]
   val wordList: Trie[Char]
   val rackSize: Int
+}
+
+/**
+ * Helper methods which are capable of loading from generalized streams. Used
+ * for loading from JAR resources as well as files on the filesystem.
+ */
+abstract class StreamConfig extends Config {
+  protected def loadLetterDistribution(letterScanner: Scanner): Map[Char, Int] = {
+    val dist = new HashMap[Char, Int]()
+    
+    while (letterScanner.hasNext) {
+      val word = letterScanner.next
+      val score = letterScanner.nextInt
+      
+      dist(word(0)) = score
+    }
+    
+    dist.toMap
+  }
+  
+  protected def loadLetterScores(letterScanner: Scanner): Map[Char, Int] = {
+    val scores = new HashMap[Char, Int]()
+    
+    while (letterScanner.hasNext) {
+      val word = letterScanner.next
+      val score = letterScanner.nextInt
+      
+      scores(word(0)) = score
+    }
+    
+    scores.toMap
+  }
+
+  protected def loadWordList(wordScanner: Scanner): Trie[Char] = {
+    val words = new Trie[Char]()
+    
+    while (wordScanner.hasNext) {
+      words.add(wordScanner.next.toList)
+    }
+    
+    words
+  }
 }
 
 /**
@@ -34,50 +77,25 @@ trait Config {
  *  zombie
  *  ...
  */
-class ResourceConfig extends Config {
-  def loadResource(path: String) = getClass().getResourceAsStream(path)
+class ResourceConfig extends StreamConfig {
+  private def loadResource(path: String): Scanner = 
+    new Scanner(getClass().getResourceAsStream(path))
   
-  private def loadLetterDistribution: Map[Char, Int] = {
-    val letterScanner = new Scanner(loadResource("/res/letter-dist.txt"))
-    val dist = new HashMap[Char, Int]()
-    
-    while (letterScanner.hasNext) {
-      val word = letterScanner.next
-      val score = letterScanner.nextInt
-      
-      dist(word(0)) = score
-    }
-    
-    dist.toMap
-  }
-  
-  private def loadLetterScores: Map[Char, Int] = {
-    val letterScanner = new Scanner(loadResource("/res/letter-score.txt"))
-    val scores = new HashMap[Char, Int]()
-    
-    while (letterScanner.hasNext) {
-      val word = letterScanner.next
-      val score = letterScanner.nextInt
-      
-      scores(word(0)) = score
-    }
-    
-    scores.toMap
-  }
-  
-  private def loadWordList: Trie[Char] = {
-    val wordScanner = new Scanner(loadResource("/res/words.txt"))
-    val words = new Trie[Char]()
-    
-    while (wordScanner.hasNext) {
-      words.add(wordScanner.next.toList)
-    }
-    
-    words
-  }
-  
-  val letterDistribution = loadLetterDistribution
-  val letterScores = loadLetterScores
-  val wordList = loadWordList
+  val letterDistribution = loadLetterDistribution(loadResource("/res/letter-dist.txt"))
+  val letterScores = loadLetterScores(loadResource("/res/letter-score.txt"))
+  val wordList = loadWordList(loadResource("/res/words.txt"))
+  val rackSize = 7
+}
+
+/**
+ * This class implements Config by searching for files on the filesystem.
+ */
+class FileConfig(letterDistFile: String, letterScoreFile: String, wordFile: String) extends StreamConfig {
+  private def loadResource(path: String): Scanner =
+    new Scanner(new File(path))
+
+  val letterDistribution = loadLetterDistribution(loadResource(letterDistFile))
+  val letterScores = loadLetterScores(loadResource(letterScoreFile))
+  val wordList = loadWordList(loadResource(wordFile))
   val rackSize = 7
 }
