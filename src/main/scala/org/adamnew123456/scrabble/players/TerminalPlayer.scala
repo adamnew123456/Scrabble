@@ -37,13 +37,15 @@ class TerminalPlayer(name: String, game: Config)
     // numbers and tiles equally
     val colNumberPadding = colNumbers.map(_.toString.length).max
     val rowNumberPadding = rowNumbers.map(_.toString.length).max
+
+    var columnSep = List.fill(colNumberPadding)(' ').mkString("")
     
     // Pad the first line in accordance with the row numbers (plus an extra,
     // to include the space after the row numbers)
-    val leftPadding = List.fill(' ')(rowNumberPadding + 1).mkString("")
+    val leftPadding = List.fill(rowNumberPadding + 1)(' ').mkString("")
     println(leftPadding + colNumbers.map {col: Int => 
       leftJustify(col.toString, colNumberPadding)
-    })
+    }.mkString(columnSep))
     
     for (row <- 0.to(board.height - 1)) {
       val line = for (col <- 0.to(board.width - 1)) 
@@ -56,7 +58,7 @@ class TerminalPlayer(name: String, game: Config)
       
       val justifiedLineNumber = leftJustify(rowNumbers(row).toString, rowNumberPadding)
       val colJustifiedLine = line.map(leftJustify(_, colNumberPadding))
-      println(s"${justifiedLineNumber} ${colJustifiedLine.mkString(" ")}")
+      println(s"${justifiedLineNumber} ${colJustifiedLine.mkString(columnSep + " ")}")
     }
   }
   
