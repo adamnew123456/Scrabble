@@ -10,9 +10,8 @@ import org.adamnew123456.scrabble.{BasePlayer, Board, Config, EndGame, TileGroup
  * best move it can within a certain timeframe, by plugging letters into
  * various tiles and seeing if they score.
  */
-class NaiveComputerPlayer(name: String, game: Config, scorer: WordScorer, 
-                          thinkTimeNano: Long = NaiveComputerPlayer.MAX_TIMEFRAME_NS)
-    extends BasePlayer(name, game, scorer) {
+class NaiveComputerPlayer(name: String, game: Config, thinkTimeNano: Long = NaiveComputerPlayer.MAX_TIMEFRAME_NS)
+    extends BasePlayer(name, game) {
   
   def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup = {
     // This AI doesn't consider replacing tiles 

@@ -20,6 +20,10 @@ case class EndGame(board: Board, scores: Map[String, Int])
 class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
   val scorer = new WordScorer(config.letterScores, config.wordList)
   var board = startingBoard
+
+  // The scorer has to be set here, since the code building each BasePlayer
+  // doesn't have access to the scorer yet - we have to fill it in ourselves
+  players.foreach(_.setScorer(scorer))
   
   // Ensure that each player's name is unique
   val uniqueNames = players.map(_.name).toSet

@@ -12,8 +12,8 @@ import org.adamnew123456.scrabble.players.TerminalColorScheme._
 /**
  * This is a player which interacts via a terminal, using basic 
  */
-class TerminalPlayer(name: String, game: Config, scorer: WordScorer) 
- extends BasePlayer(name, game, scorer) {
+class TerminalPlayer(name: String, game: Config) 
+ extends BasePlayer(name, game) {
   var previousScore = 0
   val inputStream = Source.stdin.getLines
   
