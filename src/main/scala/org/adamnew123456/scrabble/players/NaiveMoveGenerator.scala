@@ -133,6 +133,7 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, ope
     strategies.foreach { strategy: Strategy =>
       val time = System.nanoTime
       if (time >= maxTime) {
+        println(s"[NaiveMoveGen] Best move is $bestMove")
         return bestMove
       } else {
         processMove(strategy) match {
