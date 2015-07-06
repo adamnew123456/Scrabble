@@ -108,8 +108,11 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         
         // Now, we just need to ensure that all the tiles added are somehow
         // connected to the center tile
-        _ <- if (board.isConnected) Success(())
-             else                   Failure(null)
+        _ <- if (newBoard.isConnected) Success(())
+             else {
+               println("Failure: Board is not connected")
+               Failure(null)
+             }
              
         // Note: We have to do the scoring section inside of the monad, since
         // it involves re-doing the turn if it finds a words that doesn't exist
@@ -119,7 +122,8 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         // If no words were added, then this player quits
         _ <- if (oldWords == newWords) { 
                shouldContinue = false 
-               Failure(null)
+               println("Failure: No new words generated")
+               Failure(Forfeit)
              }
              else Success(())
              
