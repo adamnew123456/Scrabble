@@ -1,6 +1,7 @@
 package org.adamnew123456.scrabble.players
 
 
+import scala.collection.mutable.HashMap
 import scala.util.{Try, Success, Failure}
 import org.adamnew123456.scrabble.{Board, TileGroup, WordScorer}
 
@@ -9,7 +10,7 @@ import org.adamnew123456.scrabble.{Board, TileGroup, WordScorer}
  * complex enough that it was worthwhile to extract it from the 
  * NaiveComputerPlayer.
  */
-class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, openSpaces: IndexedSeq[(Int, Int)]) {
+class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer) {
   /**
    * To define what moves should be possible for a turn, the following
    * structure is going to be used:
@@ -25,6 +26,39 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, ope
   trait Strategy
   case class Move(column: Int, row: Int, tile: Char) extends Strategy
   case class And(first: Strategy, second: Strategy) extends Strategy
+  
+  // This caches the available tiles, based upon what other tiles have been
+  // used
+  val tileCache = HashMap[Set[(Int, Int)], IndexedSeq[(Int, Int)]]()
+  
+  // Computes the open spaces for a given strategy
+  def computeOpenSpaces(usedSpaces: Set[(Int, Int)]): IndexedSeq[(Int, Int)] = {
+    if (tileCache.contains(usedSpaces)) {
+      tileCache(usedSpaces)
+    } else {
+      val openSpacesOptions = 
+        for { col <- 0.to(board.width - 1)
+            row <- 0.to(board.height - 1)
+        } yield {
+          val left = (col - 1, row)
+          val right = (col + 1, row)
+          val above = (col, row - 1)
+          val below = (col, row + 1)
+          
+          val space = (col, row)
+          val adjacent = List(left, right, above, below)
+          if (adjacent.exists(usedSpaces.contains(_)) && !usedSpaces.contains(space)) {
+            Some((col, row))
+          } else {
+            None
+          }
+        }
+      
+      val openSpaces = openSpacesOptions.filter(_.isDefined).map(_.get)
+      tileCache(usedSpaces) = openSpaces
+      openSpaces
+    }
+  }
   
   // Finds out what tiles would be used by a given strategy
   def findTilesUsed(strategy: Strategy): TileGroup =
@@ -62,7 +96,7 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, ope
       // tile into each possible space
       val availableTiles = tiles.asList.toSet
       val moves = for {
-        (col, row) <- openSpaces
+        (col, row) <- computeOpenSpaces(board.usedSpaces)
         tile <- availableTiles
       } yield Move(col, row, tile)
       
@@ -81,7 +115,7 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, ope
             val uniqueFreeTiles = freeTiles.asList.toSet
             uniqueFreeTiles.toList.flatMap { freeTile: Char =>
               val spacesUsed = findSpacesUsed(oldMove)
-              val freeSpaces = openSpaces.toSet - spacesUsed
+              val freeSpaces = computeOpenSpaces(board.usedSpaces ++ spacesUsed)
               
               freeSpaces.toList.map {
                 case (col: Int, row: Int) => And(oldMove, Move(col, row, freeTile))
@@ -108,11 +142,11 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer, ope
   // or None if the move is invalid
   def processMove(strategy: Strategy): Option[(Int, Map[(Int, Int), Char])] = {
     val move = toMove(strategy)
-    val oldWords = board.findWords.map(_.text)
+    val oldWords = board.findWords
     
     val turnScore = for {
       newBoard <- board.addCharacters(move)
-      newWords <- Success(newBoard.findWords.map(_.text))
+      newWords <- Success(newBoard.findWords)
       
       wordDiff <- Success(scorer.computeModifiedWords(oldWords, newWords))
       score <- scorer.computeTurnScore(wordDiff)

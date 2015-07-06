@@ -54,6 +54,11 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
   val get = (apply _).tupled
   
   /**
+   * Gets the spaces currently in use on the board.
+   */
+  val usedSpaces = board.keySet
+  
+  /**
    * Creates a string representation of a board.
    */
   override def toString: String = {

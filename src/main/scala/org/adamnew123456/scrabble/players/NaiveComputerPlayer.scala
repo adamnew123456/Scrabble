@@ -21,33 +21,11 @@ class NaiveComputerPlayer(name: String, game: Config, thinkTimeNano: Long = Naiv
   def turn(board: Board, tiles: TileGroup): Map[(Int, Int), Char] = {
     println(s"[Naive $name] Starting turn")
     
-    // First, find out which tiles can have tiles added to them
-    val squares = for {col <- 0.to(board.width - 1)
-                       row <- 0.to(board.height - 1)}
-                  yield {
-                    // Check all the adjacent tiles, and see if any of them are
-                    // occupied by a tile
-                    val left = (col - 1, row)
-                    val right = (col + 1, row)
-                    val above = (col, row - 1)
-                    val below = (col, row + 1)
-                    
-                    val adjacent = List(left, right, above, below).map(board.get)
-                    if (adjacent.exists(_.isDefined) && !board(col, row).isDefined) {
-                      Some((col, row))
-                    } else {
-                      None
-                    }
-                  }
-                  
-    val validSquares = squares.filter(_.isDefined).map(_.get)
-    println(s"[Naive $name] Found ${validSquares.length} open spaces")
-    
     // These are the words on the board originally, for comparison
     val oldWords = board.findWords.map(_.text)
     println(s"[Naive $name] Starting out with words $oldWords")
     
-    val moveGenerator = new NaiveMoveGenerator(board, tiles, scorer, validSquares)
+    val moveGenerator = new NaiveMoveGenerator(board, tiles, scorer)
     
     println(s"[Naive $name] Thinking for ${thinkTimeNano / 1e9} seconds.")
     val targetTime = System.nanoTime + thinkTimeNano
