@@ -300,6 +300,24 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                       }
                     }),
                     
+    TerminalCommand("*", Nil, "Shows the words you added this turn",
+                    {args: List[String] =>
+                      val oldWords = board.findWords
+                      val newBoard = board.addCharacters(boardAdditions.toMap) match {
+                        case Success(newBoard) =>
+                          val newWords = newBoard.findWords
+                          val addedWords = scorer.computeModifiedWords(oldWords, newWords)
+                          
+                          println("You have added:")
+                          addedWords.foreach { word: Word =>
+                            println(" - " + word)
+                          }
+                        case Failure(exn) =>
+                          println(s"Error: $exn")
+                      }
+                      
+                    }),
+                    
     TerminalCommand("s", Nil, "Submit this turn",
                     {args: List[String] =>
                       isDone = true
