@@ -30,7 +30,9 @@ object Direction extends Enumeration {
 /**
  * A single word on the board, which spans a range between two squares.
  */
-case class Word(text: String, orientation: Direction.Type, start: (Int, Int))
+case class Word(text: String, orientation: Direction.Type, start: (Int, Int)) {
+  override def toString = s"$text $start:$orientation"
+}
 
 /**
  * The Scrabble board is a two-dimensional matrix, which contains the 
