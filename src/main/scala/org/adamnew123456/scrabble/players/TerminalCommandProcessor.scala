@@ -252,11 +252,11 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                     
     TerminalCommand("p", Nil, "Shows points added this turn",
                     {args: List[String] =>
-                      val oldWords = board.findWords.map(_.text)
+                      val oldWords = board.findWords
                       
                       val points = board.addCharacters(boardAdditions.toMap) match {
                         case Success(newBoard) =>
-                          val newWords = newBoard.findWords.map(_.text)
+                          val newWords = newBoard.findWords
                           val addedWords = scorer.computeModifiedWords(oldWords, newWords)
                           
                           scorer.computeTurnScore(addedWords) match {

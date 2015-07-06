@@ -133,9 +133,7 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
              else Success(())
              
         addedWords <- Success(
-          scorer.computeModifiedWords( 
-            oldWords.map(_.text), 
-            newWords.map(_.text)))
+          scorer.computeModifiedWords(oldWords, newWords))
             
          score <- scorer.computeTurnScore(addedWords)
       } yield (newTiles, newBoard, score)

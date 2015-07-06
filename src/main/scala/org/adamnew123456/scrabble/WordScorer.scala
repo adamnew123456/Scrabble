@@ -17,18 +17,18 @@ class WordScorer(letterScores: Map[Char, Int], wordList: Trie[Char]) {
   /**
    * Checks to see if a word is a valid word, or not.
    */
-  def isValidWord(word: String): Boolean = wordList.contains(word.toList)
+  def isValidWord(word: Word): Boolean = wordList.contains(word.text.toList)
   
   /**
    * This computes the score of a word.
    */
-  def scoreWord(word: String): Int = word.toList.map(letterScores(_)).sum
+  def scoreWord(word: Word): Int = word.text.map(letterScores(_)).sum
   
   /**
    * This computes the difference between two word lists, and returns a list
    * of words which should be scored.
    */
-  def computeModifiedWords(beforeWords: Set[String], afterWords: Set[String]): Set[String] =
+  def computeModifiedWords(beforeWords: Set[Word], afterWords: Set[Word]): Set[Word] =
     afterWords.diff(beforeWords)
   
   /**
@@ -36,10 +36,10 @@ class WordScorer(letterScores: Map[Char, Int], wordList: Trie[Char]) {
    * been added; if all the added words are valid, then the score from those
    * words is returned.
    */
-  def computeTurnScore(words: Set[String]): Try[Int] = {
+  def computeTurnScore(words: Set[Word]): Try[Int] = {
     val invalidWords = words.filter(!isValidWord(_)).toList
     invalidWords match {
-      case invalid :: _ => Failure(NoSuchWordError(invalid))
+      case invalid :: _ => Failure(NoSuchWordError(invalid.text))
       case Nil => 
         val score = words.map(scoreWord(_)).sum
         Success(score)
