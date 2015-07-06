@@ -41,7 +41,7 @@ class WordScorer(letterScores: Map[Char, Int], wordList: Trie[Char]) {
     invalidWords match {
       case invalid :: _ => Failure(NoSuchWordError(invalid.text))
       case Nil => 
-        val score = words.map(scoreWord(_)).sum
+        val score = words.toList.map(scoreWord(_)).sum
         Success(score)
     }
   }
