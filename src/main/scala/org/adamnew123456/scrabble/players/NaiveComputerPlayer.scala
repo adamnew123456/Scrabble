@@ -31,7 +31,7 @@ class NaiveComputerPlayer(name: String, game: Config, thinkTimeNano: Long = Naiv
                     val below = (col, row + 1)
                     
                     val adjacent = List(left, right, above, below).map(board.get)
-                    if (adjacent.exists(_.isDefined)) {
+                    if (adjacent.exists(_.isDefined) && !board(col, row).isDefined) {
                       Some((col, row))
                     } else {
                       None
