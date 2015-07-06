@@ -10,6 +10,11 @@ import scala.util.{Try, Success, Failure}
 case class EndGame(board: Board, scores: Map[String, Int])
 
 /**
+ * Used when the player gives up.
+ */
+case object Forfeit extends Throwable
+
+/**
  * This is the main manager class - it is responsible for:
  * 
  * - Running all the BasePlayer functions at the appropriate times
@@ -143,7 +148,10 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
           
         // If no tiles are left, we can't continue the game
         case Failure(_: NoTilesError) => shouldContinue = false
-        case Failure(_)               => doMove
+        case Failure(Forfeit)         => shouldContinue = false
+        case Failure(err) => 
+          println(s"[Move Error: ${player.name}] $err")
+          doMove
       }
     }
     
@@ -163,7 +171,9 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
     if (runTurn(player)) {
       run((player + 1) % players.length)
     } else {
-      EndGame(board, namedScores)
+      val game = EndGame(board, namedScores)
+      players.foreach {_.endGame(game)}
+      game
     }
   }
 }
