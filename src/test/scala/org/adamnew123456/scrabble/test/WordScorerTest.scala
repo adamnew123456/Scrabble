@@ -2,7 +2,7 @@ package org.adamnew123456.scrabble.test
 
 import scala.util.{Try, Success, Failure}
 
-import org.adamnew123456.scrabble.{WordScorer, NoSuchWordError, Trie}
+import org.adamnew123456.scrabble.{Direction, NoSuchWordError, Trie, Word, WordScorer}
 
 import org.junit.Test
 import junit.framework.TestCase
@@ -31,19 +31,22 @@ class WordScorerTest extends TestCase {
   }
   
   val scorer = new WordScorer(tileScores, validWords)
+
+  def stringToWord(str: String) =
+    Word(str, Direction.Horizontal, (0, 0))
   
   /**
    * Ensures that the words in the word list are all valid
    */
   def testValidWords() {
-    wordList.foreach(word => assertTrue(scorer.isValidWord(word)))
+    wordList.map(stringToWord).foreach(word => assertTrue(scorer.isValidWord(word)))
   }
   
   /**
    * Ensures that a few invalid words aren't valid.
    */
   def testInvalidWords() {
-    List("not", "in", "the", "word", "list").foreach {word => 
+    List("not", "in", "the", "word", "list").map(stringToWord).foreach {word => 
       assertFalse(scorer.isValidWord(word))
     }
   }
@@ -53,7 +56,9 @@ class WordScorerTest extends TestCase {
    */
   def testScoredWords() {
     wordListScores.foreach {
-      case (word: String, score: Int) => assertEquals(scorer.scoreWord(word), score)
+      case (word: String, score: Int) => 
+        val realWord = stringToWord(word)
+        assertEquals(scorer.scoreWord(realWord), score)
     }
   }
   
@@ -62,18 +67,19 @@ class WordScorerTest extends TestCase {
    * of words.
    */
   def testTurn() {
-    val beforeTurn = Set("cafe", "babe")
-    val afterTurn = Set("cafe", "babe", "fed")
+    val beforeTurn = Set("cafe", "babe").map(stringToWord)
+    val afterTurn = Set("cafe", "babe", "fed").map(stringToWord)
     
-    assertEquals(scorer.computeModifiedWords(beforeTurn, afterTurn), Set("fed"))
+    assertEquals(scorer.computeModifiedWords(beforeTurn, afterTurn), 
+                Set("fed").map(stringToWord))
   }
   
   /**
    * Ensures that the word scorer correctly scores modified words.
    */
   def testScorer() {
-    val beforeTurn = Set("cafe", "babe")
-    val afterTurn = Set("cafe", "babe", "fed")
+    val beforeTurn = Set("cafe", "babe").map(stringToWord)
+    val afterTurn = Set("cafe", "babe", "fed").map(stringToWord)
     
     val diff = scorer.computeModifiedWords(beforeTurn, afterTurn)
     scorer.computeTurnScore(diff) match {
@@ -86,8 +92,8 @@ class WordScorerTest extends TestCase {
    * Ensures that the scorer rejects invalid words.
    */
   def testScorerRejectsBadWords() {
-    val beforeTurn = Set("cafe", "babe")
-    val afterTurn = Set("cafe", "babe", "invalid")
+    val beforeTurn = Set("cafe", "babe").map(stringToWord)
+    val afterTurn = Set("cafe", "babe", "invalid").map(stringToWord)
     
     val diff = scorer.computeModifiedWords(beforeTurn, afterTurn)
     scorer.computeTurnScore(diff) match {
