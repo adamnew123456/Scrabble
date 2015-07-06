@@ -114,11 +114,11 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     var (startRow, startCol) = location
     
     val wordTiles = (if (direction == Direction.Horizontal) {
-      for (col <- startCol.to(startCol + word.length)) 
+      for (col <- startCol.to(startCol + word.length - 1)) 
         yield (col, startRow)
     } else {
-      for (row <- startRow.to(startRow + word.length))
-        yield (row, startCol)
+      for (row <- startRow.to(startRow + word.length - 1))
+        yield (startCol, row)
     }).toList
     
     // If the final tile in the sequence is off the board, then the word
@@ -161,10 +161,10 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
             case Failure(_) => 
               return Right(s"Not enough ${RackTile}$tile${AnsiColor.RESET} tiles.")
           }
+          
+          // Add it to the board
+          tempBoardAdditions((col, row)) = tile
         }
-        
-        // Add it to the board
-        tempBoardAdditions((col, row)) = tile
     }
     
     // If we've gotten this far, then we can update the board and the rack
@@ -195,7 +195,9 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                           case _   => Right(s"Orientation must be 'h' or 'v'")
                         }).left
                         
-                        boardCheck <- addToBoard(rowCol, orientation, wordArg).left
+                        col <- Left(rowCol._1).left
+                        row <- Left(rowCol._2).left
+                        boardCheck <- addToBoard((col, row), orientation, wordArg).left
                       } yield boardCheck
                       
                       result match {
@@ -326,8 +328,10 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     commandMap.get(command) match {
       case Some(cmd) =>
         val argSpec = cmd.args
-        if (argSpec.length == cmd.args.length) {
+        if (argSpec.length == args.length) {
           cmd.fn(args)
+        } else {
+          commandMap("h").fn(Nil)
         }
       case None =>
         commandMap("h").fn(Nil)
