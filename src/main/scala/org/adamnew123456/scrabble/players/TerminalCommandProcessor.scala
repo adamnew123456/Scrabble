@@ -305,6 +305,12 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
                       isDone = true
                     }),
                     
+    TerminalCommand("!", Nil, "Resets this turn",
+                    {args: List[String] =>
+                      boardAdditions.clear
+                      tiles = currentTiles
+                    }),
+                    
     TerminalCommand("h", Nil, "Show a help menu",
                     {args: List[String] =>
                       commands.foreach {cmd: TerminalCommand =>
