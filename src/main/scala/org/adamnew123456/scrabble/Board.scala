@@ -121,16 +121,17 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
    */
   def addWord(word: String, location: (Int, Int), direction: Direction.Type): Try[Board] = {
     // This moves the location ahead for each character in the word
-    def ahead(loc: (Int, Int)) = (loc, direction) match {
-      case ((col, row), Direction.Vertical) => (col, row + 1)
-      case ((col, row), Direction.Horizontal) => (col + 1, row)
+    val spaces = (location, direction) match {
+      case ((col, startRow), Direction.Vertical) =>
+        for (row <- startRow.to(startRow + word.length - 1))
+          yield (col, row)
+      case ((startCol, row), Direction.Horizontal) =>
+        for (col <- startCol.to(startCol + word.length - 1))
+          yield (col, row)
     }
     
     // Figure out if the word is too long to fit on the board
-    val endOfWord = (location, direction) match {
-      case ((col, row), Direction.Vertical) => (col, row + (word.length - 1))
-      case ((col, row), Direction.Horizontal) => (col + (word.length - 1), row)
-    }
+    val endOfWord = spaces(spaces.length - 1)
     
     if (endOfWord._1 >= width || endOfWord._1 < 0 ||
         endOfWord._2 >= height || endOfWord._2 < 0) {
@@ -141,13 +142,13 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
       
       // Go through each character in the word, and figure out if it overlaps
       // with a tile on the board, that is not the same as the character.
-      word.toList.foldLeft(location) { 
-        (position: (Int, Int), letter: Char) =>
-          if (board.contains(position) && board(position) != letter) {
+      spaces.zip(word).foreach {
+        case ((col: Int, row: Int), tile: Char) =>
+          val position = (col, row)
+          if (board.contains(position) && board(position) != tile) {
             return Failure(DuplicateTilesError(Set(position)))
           } else {
-            newBoard(position) = letter
-            ahead(position)
+            newBoard(position) = tile
           }
       }
       
