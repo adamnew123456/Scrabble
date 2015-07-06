@@ -229,8 +229,10 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
     
     if (board.contains(centerLeft) || board.contains(centerRight)) {
       toVisit += ((centerCol, centerRow, Direction.Horizontal))
-    } else {
+    } else if (board.contains(centerUp) || board.contains(centerDown)) {
       toVisit += ((centerCol, centerRow, Direction.Vertical))
+    } else {
+      return Set[Word]()
     }
     
     // Takes a sequence of tiles, and figures out where the word boundaries are
