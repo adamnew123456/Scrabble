@@ -71,7 +71,7 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         val newTiles = for {
           remaining <- currentTiles.remove(toReplace)
           replacement <- tileBag.replaceTiles(toReplace)
-          newTiles <- Success(currentTiles.merge(replacement))
+          newTiles <- Success(remaining.merge(replacement))
         } yield newTiles
         
         newTiles match {
