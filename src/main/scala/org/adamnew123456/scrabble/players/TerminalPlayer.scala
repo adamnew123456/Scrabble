@@ -110,10 +110,10 @@ class TerminalPlayer(name: String, game: Config)
   }
   
   def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup = {
-    val unsanatizedInputTiles = getInput(s"Tiles to replace, max $maxReplace:")
+    val unsanatizedInputTiles = getInput(s"Tiles to replace, max $maxReplace: ")
     
     val isLetter = game.letterDistribution.keySet.contains(_)
-    val tileList = unsanatizedInputTiles.filter(!isLetter(_))
+    val tileList = unsanatizedInputTiles.filter(isLetter(_))
     
     TileGroup.fromTraversable(tileList)
   }
