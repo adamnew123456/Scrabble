@@ -7,6 +7,7 @@ val config = new FileConfig("bin/letter-dist.txt", "bin/letter-score.txt", "bin/
 print("Enter your name: ")
 val humanPlayer = new TerminalPlayer(readLine, config)
 val aiPlayer = new NaiveComputerPlayer("<Computer>", config)
+val aiPlayer2 = new NaiveComputerPlayer("<Computer 2>", config)
 
-val game = new Game(board, config, List(humanPlayer, aiPlayer))
+val game = new Game(board, config, List(humanPlayer, aiPlayer, aiPlayer2))
 game.run()

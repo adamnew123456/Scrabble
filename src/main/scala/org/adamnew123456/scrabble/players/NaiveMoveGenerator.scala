@@ -1,6 +1,7 @@
 package org.adamnew123456.scrabble.players
 
 
+import com.twitter.util.LruMap
 import scala.collection.mutable.HashMap
 import scala.util.{Try, Success, Failure}
 import org.adamnew123456.scrabble.{Board, TileGroup, WordScorer}
@@ -29,7 +30,7 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer) {
   
   // This caches the available tiles, based upon what other tiles have been
   // used
-  val tileCache = HashMap[Set[(Int, Int)], IndexedSeq[(Int, Int)]]()
+  val tileCache = new LruMap[Set[(Int, Int)], IndexedSeq[(Int, Int)]](500)
   
   // Computes the open spaces for a given strategy
   def computeOpenSpaces(usedSpaces: Set[(Int, Int)]): IndexedSeq[(Int, Int)] = {
