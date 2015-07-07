@@ -1,7 +1,7 @@
 package org.adamnew123456.scrabble.players
 
 import scala.annotation.tailrec
-import scala.util.{Try, Success, Failure}
+import scala.util.{ Try, Success, Failure }
 
 import org.adamnew123456.scrabble._
 
@@ -12,36 +12,36 @@ import org.adamnew123456.scrabble._
  */
 class NaiveComputerPlayer(name: String, game: Config, thinkTimeNano: Long = NaiveComputerPlayer.MAX_TIMEFRAME_NS)
     extends BasePlayer(name, game) {
-  
+
   def replaceTiles(tiles: TileGroup, maxReplace: Int, failReason: Option[Throwable]): TileGroup = {
     // This AI doesn't consider replacing tiles 
     TileGroup.fromTraversable(Nil)
   }
-  
+
   def turn(board: Board, tiles: TileGroup, failReason: Option[TurnRejectReason]): Map[(Int, Int), Char] = {
     println(s"[Naive $name] Starting turn")
     if (failReason.isDefined) {
       println(s"[Naive $name] Failure: ${failReason.get}")
     }
-    
+
     // These are the words on the board originally, for comparison
     val oldWords = board.findWords.map(_.text)
     println(s"[Naive $name] Starting out with words $oldWords")
-    
+
     val moveGenerator = new NaiveMoveGenerator(board, tiles, scorer)
-    
+
     println(s"[Naive $name] Thinking for ${thinkTimeNano / 1e9} seconds.")
     val targetTime = System.nanoTime + thinkTimeNano
     moveGenerator.run(targetTime) match {
-      case Some(moves) => 
+      case Some(moves) =>
         println(s"[Naive $name] Found valid move $moves")
         moves
-      case None => 
+      case None =>
         println(s"[Naive $name] Out of ideas")
         Map[(Int, Int), Char]()
     }
   }
-  
+
   def startTurn(board: Board, tiles: TileGroup, score: Map[String, Int]) = ()
   def endTurn(board: Board, tiles: TileGroup, score: Map[String, Int]) = ()
   def endGame(result: EndGame) = ()
