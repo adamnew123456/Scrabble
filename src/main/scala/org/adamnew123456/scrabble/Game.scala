@@ -1,7 +1,7 @@
 package org.adamnew123456.scrabble
 
 import scala.annotation.tailrec
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, HashSet}
 import scala.util.{Try, Success, Failure}
 
 /**
@@ -52,6 +52,18 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
   def namedScores: Map[String, Int] = scores.map { case (player, score) =>
     player.name -> score
   }.toMap
+  
+  def playerInfos: Map[String, PlayerInfo] =
+    Map() ++ players.map { player: BasePlayer =>
+      (player.name, PlayerInfo(playerTiles(player), scores(player)))
+    }
+  
+  // Game observers allow outside entites to watch the game as it occurs,
+  // without having the ability to modify the state of any given player
+  val observers = new HashSet[GameObserver]
+  
+  def attachObserver(observer: GameObserver) = observers += observer
+  def detachObserver(observer: GameObserver) = observers -= observer
   
   def runTurn(playerIndex: Int): Option[EndReason] = {
     val player = players(playerIndex)
@@ -166,11 +178,15 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
   
   @tailrec
   final def run(player: Int = 0): EndGame = {
+    observers.foreach(_.startTurn(board, players(player).name, playerInfos))
     runTurn(player) match {
-      case None => run((player + 1) % players.length)
+      case None => 
+        observers.foreach(_.endTurn(board, players(player).name, playerInfos))
+        run((player + 1) % players.length)
       case Some(reason) =>
         val game = EndGame(board, namedScores, reason)
         players.foreach(_.endGame(game))
+        observers.foreach(_.endGame(game))
         game
     }
   }
