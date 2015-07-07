@@ -7,12 +7,7 @@ import scala.util.{Try, Success, Failure}
 /**
  * This is the final state of the game.
  */
-case class EndGame(board: Board, scores: Map[String, Int])
-
-/**
- * Used when the player gives up.
- */
-case object Forfeit extends Throwable
+case class EndGame(board: Board, scores: Map[String, Int], reason: EndReason)
 
 /**
  * This is the main manager class - it is responsible for:
@@ -58,7 +53,7 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
     player.name -> score
   }.toMap
   
-  def runTurn(playerIndex: Int): Boolean = {
+  def runTurn(playerIndex: Int): Option[EndReason] = {
     val player = players(playerIndex)
     
     player.startTurn(board, playerTiles(player), namedScores)
@@ -68,10 +63,10 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
      * valid TileGroup to remove - this is why it is an inner @tailrec
      */
     @tailrec
-    def doReplacement: Unit = {
+    def doReplacement(redoReason: Option[Throwable]): Unit = {
       val currentTiles = playerTiles(player)
       val maxReplacement = Math.min(tileBag.tilesLeft, config.rackSize)
-      val toReplace = player.replaceTiles(currentTiles, maxReplacement)
+      val toReplace = player.replaceTiles(currentTiles, maxReplacement, redoReason)
       if (toReplace.size > 0) {
         val newTiles = for {
           remaining <- currentTiles.remove(toReplace)
@@ -82,28 +77,27 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         newTiles match {
           case Success(newTiles) =>
             playerTiles(player) = newTiles
-          case Failure(_) => doReplacement
+          case Failure(exn) => doReplacement(Some(exn))
         }
       }
     }
     
     if (tileBag.tilesLeft > 0) {
-      doReplacement
+      doReplacement(None)
     }
     
-    // Scala doesn't like enabling @tailcall when a 'return' is part of a
-    // pattern match - this kludges around that
-    var shouldContinue = true
+    var gameEndReason: Option[EndReason] = None
     
     /**
      * Getting a valid move can also take multiple stages, if the player doesn't
      * generate a valid move on their first try.
      */
     @tailrec 
-    def doMove: Unit = {
-      val playerMove = player.turn(board, playerTiles(player))
+    def doMove(turnFailure: Option[TurnRejectReason]): Unit = {
+      val playerMove = player.turn(board, playerTiles(player), turnFailure)
       val tilesUsed = TileGroup.fromTraversable(playerMove.values)
       
+      var nextTurnFailure: Option[TurnRejectReason] = None
       val result = for {
         unusedTiles <- playerTiles(player).remove(tilesUsed)
         replacementTiles <- tileBag.drawTiles(config.rackSize - unusedTiles.size)
@@ -113,9 +107,10 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         
         // Now, we just need to ensure that all the tiles added are somehow
         // connected to the center tile
-        _ <- if (newBoard.isConnected) Success(())
-             else {
-               println("Failure: Board is not connected")
+        _ <- if (newBoard.isConnected) {
+               Success(())
+             } else {
+               nextTurnFailure = Some(DisconnectReject)
                Failure(null)
              }
              
@@ -126,9 +121,9 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
         
         // If no words were added, then this player quits
         _ <- if (oldWords == newWords) { 
-               shouldContinue = false 
-               println("Failure: No new words generated")
-               Failure(Forfeit)
+               gameEndReason = Some(ForfeitEnding(player.name))
+               Success(()) // Not really a "success", but we don't need to ask
+                           // the player for any more input
              }
              else Success(())
              
@@ -144,34 +139,39 @@ class Game(startingBoard: Board, config: Config, players: List[BasePlayer]) {
           board = newBoard
           scores(player) += score
           
-        // If no tiles are left, we can't continue the game
-        case Failure(_: NoTilesError) => shouldContinue = false
-        case Failure(Forfeit)         => shouldContinue = false
+        case Failure(null) =>
+          doMove(nextTurnFailure)
+        case Failure(_: NoTilesError) =>
+          // The game cannot continue if we lack tiles, but this doesn't mean
+          // that we can try to run this turn again - there's no way it could
+          // succeed
+          gameEndReason = Some(EmptyBagEnding)
+          ()
         case Failure(err) => 
-          println(s"[Move Error: ${player.name}] $err")
-          doMove
+          nextTurnFailure = Some(ExceptionReject(err))
+          doMove(nextTurnFailure)
       }
     }
     
-    doMove
-    
-    // See the definition of shouldContinue for why this has to be there
-    if (!shouldContinue) {
-      return false
+    doMove(None)
+   
+    gameEndReason match {
+      case None => 
+        player.endTurn(board, playerTiles(player), namedScores)
+        None
+      case _: Some[_] =>
+        gameEndReason
     }
-    
-    player.endTurn(board, playerTiles(player), namedScores)
-    true
   }
   
   @tailrec
   final def run(player: Int = 0): EndGame = {
-    if (runTurn(player)) {
-      run((player + 1) % players.length)
-    } else {
-      val game = EndGame(board, namedScores)
-      players.foreach {_.endGame(game)}
-      game
+    runTurn(player) match {
+      case None => run((player + 1) % players.length)
+      case Some(reason) =>
+        val game = EndGame(board, namedScores, reason)
+        players.foreach(_.endGame(game))
+        game
     }
   }
 }

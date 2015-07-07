@@ -22,28 +22,34 @@ case class NoTileInHandError(tile: Char) extends Exception {
  *   of characters to add to the board.
  */
 abstract class BasePlayer(val name: String, game: Config) {
+  // This has to be done this way, since only the Game has access to the
+  // scorer, but the BasePlayer has to be created before the Game is
   protected var scorer: WordScorer = _
   def setScorer(ws: WordScorer) = 
     scorer = ws
 
   /**
    * This determines whether or not the game should replace some of the
-   * player's tiles with tiles drawn from the bag.
+   * player's tiles with tiles drawn from the bag. failReason gives the reason
+   * for calling this function again (that is, why the previous replacement
+   * failed) if this is not the first time this has been called this turn.
    * 
    * Note that any invalid requests will result in this function being
    * called again, on the same turn. If there aren't any tiles to replace,
    * then this function will not get called.
    */
-  def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup
+  def replaceTiles(tiles: TileGroup, maxReplace: Int, failReason: Option[Throwable]): TileGroup
   
   /**
    * This executes the turn, producing a map of the characters to add to the
-   * board.
+   * board. failReason gives the reason for calling this function again (that
+   * is, why the previous turn failed) if this is not the first time this
+   * has been called this turn.
    * 
    * Note that providing an invalid set of moves will result in this function
    * being called again, on the same turn.
    */
-  def turn(board: Board, tiles: TileGroup): Map[(Int, Int), Char]
+  def turn(board: Board, tiles: TileGroup, failReason: Option[TurnRejectReason]): Map[(Int, Int), Char]
   
   /**
    * This is executed at the beginning of a turn.

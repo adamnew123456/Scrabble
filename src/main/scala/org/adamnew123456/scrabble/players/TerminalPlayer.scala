@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.HashMap
 import scala.io.{AnsiColor, Source}
 
-import org.adamnew123456.scrabble.{BasePlayer, Board, Config, EndGame, TileGroup, WordScorer}
+import org.adamnew123456.scrabble._
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -103,13 +103,18 @@ class TerminalPlayer(name: String, game: Config)
     println("--=== Game Over ===--")
     
     result match {
-      case EndGame(board, scores) =>
+      case EndGame(board, scores, reason) =>
+        println(s"Game ended: $reason")
         printColoredBoard(board)
         printScores(scores)
     }
   }
   
-  def replaceTiles(tiles: TileGroup, maxReplace: Int): TileGroup = {
+  def replaceTiles(tiles: TileGroup, maxReplace: Int, failReason: Option[Throwable]): TileGroup = {
+    if (failReason.isDefined) {
+      println(s"Error: ${failReason.get}")
+    }
+    
     val unsanatizedInputTiles = getInput(s"Tiles to replace, max $maxReplace: ")
     
     val isLetter = game.letterDistribution.keySet.contains(_)
@@ -118,7 +123,11 @@ class TerminalPlayer(name: String, game: Config)
     TileGroup.fromTraversable(tileList)
   }
   
-  def turn(board: Board, tiles: TileGroup): Map[(Int, Int), Char] = {
+  def turn(board: Board, tiles: TileGroup, failReason: Option[TurnRejectReason]): Map[(Int, Int), Char] = {
+    if (failReason.isDefined) {
+      println(s"Error: ${failReason.get}")
+    }
+    
     val processor = new TerminalCommandProcessor(this, board, game, scorer, tiles)
     
     @tailrec
