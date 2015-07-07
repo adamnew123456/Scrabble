@@ -96,12 +96,25 @@ class NaiveMoveGenerator(board: Board, tiles: TileGroup, scorer: WordScorer) {
       // Simply take all the spaces, and all the tiles, and jam each possible
       // tile into each possible space
       val availableTiles = tiles.asList.toSet
+      
       val moves = for {
         (col, row) <- computeOpenSpaces(board.usedSpaces)
         tile <- availableTiles
       } yield Move(col, row, tile)
       
-      moves.toStream #::: moveGenerator(moves.toList)
+      // This ensures that the move generator starts at the center if the 
+      // Board is empty. We can ignore this issue in the later move generator,
+      // since it would have already filled the center and branched out to
+      // other tiles.
+      val totalMoves = 
+        if (board.get(board.center).isDefined) {
+          moves
+        } else {
+          val (centerCol, centerRow) = board.center
+          availableTiles.map(Move(centerCol, centerRow, _))
+        }
+      
+      totalMoves.toStream #::: moveGenerator(totalMoves.toList)
     } else {
       // If we've got a previous seed, then start working combinatorially and
       // generate moves
