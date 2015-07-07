@@ -59,6 +59,11 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
   val usedSpaces = board.keySet
   
   /**
+   * The middle tile, used for checking board connectivity.
+   */
+  val center = (width / 2, height / 2)
+  
+  /**
    * Creates a string representation of a board.
    */
   override def toString: String = {
@@ -171,9 +176,8 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
     val connected = new HashSet[(Int, Int)]()
     val toVisit = Queue[(Int, Int)]()
     
-    // Traverse the board, starting from the center and going outward
-    if (board.contains((width / 2, height / 2))) {
-      toVisit.enqueue((width / 2, height / 2))
+    if (board.contains(center)) {
+      toVisit.enqueue(center)
     }
     
     while (!toVisit.isEmpty) {
@@ -229,7 +233,7 @@ class Board(board: Map[(Int, Int), Char], val width: Int, val height: Int) {
      *  can have any orientation, so we have to figure out if it is horizontal or
      *  vertical.
      */
-    val (centerRow, centerCol) = (width / 2, height / 2)
+    val (centerRow, centerCol) = center
     val centerUp = (centerCol, centerRow - 1)
     val centerDown = (centerCol, centerRow + 1)
     val centerLeft = (centerCol - 1, centerRow)
