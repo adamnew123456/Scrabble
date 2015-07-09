@@ -4,7 +4,7 @@ import scala.collection.mutable.HashMap
 import scala.io.AnsiColor
 import scala.util.{ Success, Failure }
 
-import org.adamnew123456.scrabble.{ BasePlayer, Board, Config, Direction, NotInTileGroup, TileGroup, Word, WordScorer }
+import org.adamnew123456.scrabble._
 import org.adamnew123456.scrabble.players.TerminalColorScheme._
 
 /**
@@ -26,13 +26,11 @@ case class TerminalCommand(name: String, args: List[String], help: String, fn: L
  *   Submit to game:      s
  *   Help:                h
  */
-class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
+class TerminalCommandProcessor(player: TerminalPlayer, turnBoard: Board,
                                game: Config, scorer: WordScorer,
-                               currentTiles: TileGroup) {
+                               turnTiles: TileGroup) {
   var isDone = false
-
-  val boardAdditions = new HashMap[(Int, Int), Char]
-  var tiles = currentTiles
+  val turnBuilder = new TurnBuilder(turnBoard, turnTiles)
 
   /**
    * A safer version of toInt, which wraps exceptions in Option[T].
@@ -59,7 +57,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
       case None      => return Right(s"${rowText} is not a number")
     }
 
-    if (row < 0 || row >= board.height) {
+    if (row < 0 || row >= turnBoard.height) {
       return Right(s"${rowText} is not a valid row")
     }
 
@@ -68,37 +66,11 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
       case None      => return Right(s"${columnText} is not a number")
     }
 
-    if (col < 0 || col >= board.width) {
+    if (col < 0 || col >= turnBoard.width) {
       return Right(s"${columnText} is not a valid col")
     }
 
-    Left((row, col))
-  }
-
-  // Removes the given tiles from the player's rack
-  private def removeWordFromRack(word: String): Either[Unit, String] = {
-    // Count up each of the tiles that are present in the word
-    val wordCounts = new HashMap[Char, Int]
-    word.foreach { char: Char =>
-      if (!wordCounts.contains(char)) {
-        wordCounts(char) = 0
-      }
-      wordCounts(char) += 1
-    }
-
-    val toRemove = TileGroup.fromMap(wordCounts.toMap)
-    tiles.remove(toRemove) match {
-      case Success(newGroup) =>
-        tiles = newGroup
-        Left(())
-      case Failure(NotInTileGroup(leftovers)) =>
-        val coloredTiles = leftovers.asList.map { tile: Char =>
-          s"{RackTile}$tile${AnsiColor.RESET}"
-        }
-
-        Right(s"You lack the following tiles: ${coloredTiles.mkString(", ")}")
-      case Failure(exn) => Right(s"Error: $exn")
-    }
+    Left((col, row))
   }
 
   // Adds the given word to the temporary board
@@ -106,72 +78,56 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     location: (Int, Int),
     direction: Direction.Type,
     word: String): Either[Unit, String] = {
-    var tempTiles = tiles
-    val tempBoardAdditions = boardAdditions.clone
-
     // The location here is not in the standard (column, row) because the user
     // enters it as (row, colum)
     var (startRow, startCol) = location
 
-    val wordTiles = (if (direction == Direction.Horizontal) {
+    val wordSpaces = (if (direction == Direction.Horizontal) {
       for (col <- startCol.to(startCol + word.length - 1))
         yield (col, startRow)
     } else {
       for (row <- startRow.to(startRow + word.length - 1))
         yield (startCol, row)
     }).toList
-
-    // If the final tile in the sequence is off the board, then the word
-    // is too long
-    val (lastCol, lastRow) = wordTiles.last
-    if (lastCol >= board.width || lastRow >= board.height) {
-      return Right(s"'${word}' is too long to fit on the board")
-    }
-
-    wordTiles.zip(word).foreach {
+    
+    val wordTiles = Map(wordSpaces.zip(word): _*)
+    
+    // See if any parts of the word conflict with what is on the board
+    val builderBoard = turnBuilder.getBoard
+    val conflicting = wordTiles.filter {
       case ((col, row), tile) =>
-        // If the tile overlaps with the board, and it isn't the same, then 
-        var removeTileFromRack = true
-
-        board(col, row) match {
-          case Some(boardTile) =>
-            if (boardTile != tile) {
-              return Right(s"Tile at ${row + 1} ${col + 1} isn't ${tile}")
-            } else {
-              removeTileFromRack = false
-            }
-          case None => ()
-        }
-
-        boardAdditions.get((col, row)) match {
-          case Some(boardTile) =>
-            if (boardTile != tile) {
-              return Right(s"Tile at ${row + 1} ${col + 1} isn't ${tile}")
-            } else {
-              removeTileFromRack = false
-            }
-          case None => ()
-        }
-
-        // Ensure that the tile is actually in the player's rack, if we
-        // really have to use it
-        if (removeTileFromRack) {
-          tempTiles = tempTiles.remove(TileGroup.fromTraversable(List(tile))) match {
-            case Success(remaining) => remaining
-            case Failure(_) =>
-              return Right(s"Not enough ${RackTile}$tile${AnsiColor.RESET} tiles.")
-          }
-
-          // Add it to the board
-          tempBoardAdditions((col, row)) = tile
+        builderBoard(col, row) match {
+          case Some(otherTile) =>
+            otherTile != tile
+          case None =>
+            false
         }
     }
-
-    // If we've gotten this far, then we can update the board and the rack
-    boardAdditions ++= tempBoardAdditions
-    tiles = tempTiles
-
-    Left(())
+    
+    if (!conflicting.isEmpty) {
+      Right("Word conflicts with tiles already on board")
+    } else {
+      // If we don't conflict, then try to do add whatever tiles aren't on the
+      // board
+      val newTiles = wordTiles.filter {
+        case ((col, row), tile) =>
+          !builderBoard(col, row).isDefined
+      }
+      
+      turnBuilder.addTiles(newTiles) match {
+        case Success(()) => Left(())
+        
+        case Failure(DuplicateTilesError(spaces)) =>
+          val outputSpaces = spaces.map { case (col, row) => (row + 1, col + 1)}
+          Right(s"Error: The following tiles already exist - ${outputSpaces.mkString(", ")}")
+          
+        case Failure(NotInTileGroup(tiles)) =>
+          val outputTiles = tiles.asList
+          Right(s"Error: You lack the following tiles - ${outputTiles.mkString(", ")}")
+          
+        case Failure(exn) => Right(exn.toString)
+      }
+    }
   }
 
   val commands: List[TerminalCommand] = List(
@@ -188,16 +144,14 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
         }
 
         val result = for {
-          rowCol <- getCoordinate(rowArg, colArg).left
+          colRow <- getCoordinate(rowArg, colArg).left
           orientation <- (orientArg match {
             case "h" => Left(Direction.Horizontal)
             case "v" => Left(Direction.Vertical)
             case _   => Right(s"Orientation must be 'h' or 'v'")
           }).left
 
-          col <- Left(rowCol._1).left
-          row <- Left(rowCol._2).left
-          boardCheck <- addToBoard((col, row), orientation, wordArg).left
+          boardCheck <- addToBoard(colRow, orientation, wordArg).left
         } yield boardCheck
 
         result match {
@@ -219,20 +173,13 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
         }
 
         val result = for {
-          rowCol <- getCoordinate(rowArg, colArg).left
-          boardCheck <- (rowCol match {
-            case (row, col) =>
-              if (board(col, row).isDefined) {
-                Right(s"${row + 1}, ${col + 1} cannot be removed")
-              } else if (!boardAdditions.contains((col, row))) {
-                Right(s"${row + 1}, ${col + 1} is empty")
-              } else {
-                val tile = boardAdditions((col, row))
-                tiles = tiles.merge(TileGroup.fromTraversable(List(tile)))
-                boardAdditions.remove((col, row))
-
-                Left()
-              }
+          colRow <- getCoordinate(rowArg, colArg).left
+          boardCheck <- (turnBuilder.removeTiles(Set(colRow)) match {
+            case Success(()) => Left(())
+            case Failure(PermanentTileError(col, row)) =>
+              Right(s"Cannot remove at ${row + 1}, ${col + 1}")
+            case Failure(err) =>
+              Right(err.toString)
           }).left
         } yield boardCheck
 
@@ -244,7 +191,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
 
     TerminalCommand("r", Nil, "Lists the tiles on your rack",
       { args: List[String] =>
-        tiles.asList.foreach { tile: Char =>
+        turnBuilder.getTiles.asList.foreach { tile: Char =>
           print(s"${RackTile}$tile${AnsiColor.RESET} ")
         }
         println()
@@ -252,26 +199,24 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
 
     TerminalCommand("p", Nil, "Shows points added this turn",
       { args: List[String] =>
-        val oldWords = board.findWords
+        val oldWords = turnBoard.findWords
 
-        val points = board.addCharacters(boardAdditions.toMap) match {
-          case Success(newBoard) =>
-            val newWords = newBoard.findWords
-            val addedWords = scorer.computeModifiedWords(oldWords, newWords)
+        val builderBoard = turnBuilder.getBoard
+        val newWords = builderBoard.findWords
+        val addedWords = scorer.computeModifiedWords(oldWords, newWords)
 
-            println("Added words:")
-            addedWords.foreach { word: Word =>
-              println(" - " + word + ": " + scorer.scoreWord(word))
-            }
+        println("Added words:")
+        addedWords.foreach { word: Word =>
+          println(" - " + word + ": " + scorer.scoreWord(word))
+        }
 
-            scorer.computeTurnScore(addedWords) match {
-              case Success(points) => points
-              case Failure(exn) =>
-                println(s"Error: $exn")
-                0
-            }
-          case Failure(exn) =>
-            println(s"Error: $exn")
+        val points = scorer.computeTurnScore(addedWords) match {
+          case Success(points) => points
+          case Failure(NoSuchWordError(word)) =>
+            println(s"Error: $word is not a word")
+            0
+          case Failure(err) =>
+            println(s"Error: $err")
             0
         }
 
@@ -295,15 +240,11 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     TerminalCommand("b", Nil, "Shows the current content of the board",
       { args: List[String] =>
         println("----- Old Board")
-        player.printColoredBoard(board)
+        player.printColoredBoard(turnBoard)
 
-        val newBoard = board.addCharacters(boardAdditions.toMap) match {
-          case Success(newBoard) =>
-            println("----- Current Board")
-            player.printColoredBoard(newBoard)
-          case Failure(exn) =>
-            println(s"Error: $exn")
-        }
+        val newBoard = turnBuilder.getBoard
+        println("----- Current Board")
+        player.printColoredBoard(newBoard)
       }),
 
     TerminalCommand("s", Nil, "Submit this turn",
@@ -313,8 +254,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
 
     TerminalCommand("!", Nil, "Resets this turn",
       { args: List[String] =>
-        boardAdditions.clear
-        tiles = currentTiles
+        turnBuilder.reload(turnBoard, turnTiles)
       }),
 
     TerminalCommand("h", Nil, "Show a help menu",
@@ -349,7 +289,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, board: Board,
     }
 
     if (isDone) {
-      Some(boardAdditions.toMap)
+      Some(turnBuilder.getAdditions)
     } else {
       None
     }
