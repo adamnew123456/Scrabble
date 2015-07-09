@@ -56,7 +56,7 @@ class TileGroup(tiles: Map[Char, Int]) {
   /**
    * Get this TileGroup as a map of tile -> count.
    */
-  def asMap: Map[Char, Int] = tiles
+  def asMap: Map[Char, Int] = tiles.filter {case (tile, count) => count > 0}
 
   /**
    * Gets the number of tiles in this group.
