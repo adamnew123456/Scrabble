@@ -309,6 +309,7 @@ class TurnBuilderTest extends TestCase {
    */
   def testGetBoard {
     /*
+     * 
      * 0 1 2 3 4
      * _ _ _ _ _ 0
      * _ _ r _ _ 1 
@@ -348,5 +349,36 @@ class TurnBuilderTest extends TestCase {
     assertEquals(newBoard(2, 3).get, 'y')
     assertEquals(newBoard(1, 2).get, 'b')
     assertEquals(newBoard(3, 2).get, 'd')
+  }
+  
+  def testSuccessfulAddWord {
+    /*
+     * 0 1 2 3 4
+     * _ _ _ _ _ 0
+     * _ _ r _ _ 1 
+     * _ _ a _ _ 2
+     * _ _ y _ _ 3
+     * _ _ _ _ _ 4
+     */
+    val board = Board.empty(5, 5).addWord("ray", (2, 1), Direction.Vertical) match {
+      case Success(board) => board
+      case Failure(exn) => 
+        fail(s"Unexpected error: $exn") 
+        null 
+    } 
+    
+    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd')) 
+    val observer = new NotifyTester
+    val builder = new TurnBuilder(board, rack)
+    builder.attachObserver(observer.observe)
+    
+    builder.addWord("bad", (1, 2), Direction.Horizontal) match {
+      case Success(_)   => ()
+      case Failure(exn) => fail(s"Unexpected error $exn")
+    }
+    
+    assertTrue(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map((1, 2) -> 'b', (3, 2) -> 'd'))
+    assertEquals(builder.getTiles, TileGroup.fromTraversable(List('a', 'c')))
   }
 }

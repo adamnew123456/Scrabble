@@ -75,6 +75,56 @@ class TurnBuilder(private var board: Board, private var rack: TileGroup) {
   }
   
   /**
+   * Adds a word to the board. Note that this will automatically handle tiles
+   * which are already on the board, and doesn't require them to be on the
+   * rack.
+   */
+  def addWord(word: String, location: (Int, Int), direction: Direction.Type): Try[Unit] = {
+    /*
+     * Figure out what tiles are a part of the word.
+     */
+    val (startCol, startRow) = location
+    
+    val wordTiles = direction match {
+      case Direction.Horizontal =>
+        for (col <- startCol.to(startCol + word.length - 1))
+          yield (col, startRow)
+      case Direction.Vertical =>
+        for (row <- startRow.to(startRow + word.length - 1))
+          yield (startCol, row)
+    }
+    
+    // Separate any tiles that conflict - that is, any tiles on the board which
+    // don't correspond with the same character in the word
+    val builtBoard = getBoard
+    val tilesWord = wordTiles.zip(word)
+    val conflicted = tilesWord.filter {
+      case (loc, tile) =>
+        builtBoard.get(loc) match {
+          case Some(`tile`) => false
+          case None         => false
+          case _            => false
+        }
+    }
+    
+    conflicted.toList match {
+      case ((col, row), _) :: _ => return Failure(PermanentTileError(col, row))
+      case Nil                  => ()
+    }
+    
+    // If there are no conflicts, then go through and add each character not 
+    // already on the board
+    val newTiles = tilesWord.filter {
+      case (loc, tile) => !builtBoard.get(loc).isDefined
+    }
+    
+    // Just try to add the tiles - since addTiles does checking before it does
+    // anything, we can just rely on it for error handling
+    val tilesToAdd = Map(newTiles: _*)
+    addTiles(tilesToAdd)
+  }
+  
+  /**
    * Removes tiles placed down this turn.
    */
   def removeTiles(spaces: Set[(Int, Int)]): Try[Unit] = {

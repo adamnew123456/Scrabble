@@ -105,7 +105,7 @@ class TerminalCommandProcessor(player: TerminalPlayer, turnBoard: Board,
     }
     
     if (!conflicting.isEmpty) {
-      Right("Word conflicts with tiles already on board")
+      Right(s"Word conflicts with tiles already on board: $conflicting")
     } else {
       // If we don't conflict, then try to do add whatever tiles aren't on the
       // board
@@ -151,7 +151,10 @@ class TerminalCommandProcessor(player: TerminalPlayer, turnBoard: Board,
             case _   => Right(s"Orientation must be 'h' or 'v'")
           }).left
 
-          boardCheck <- addToBoard(colRow, orientation, wordArg).left
+          boardCheck <- (turnBuilder.addWord(wordArg, colRow, orientation) match {
+            case Success(())  => Left(())
+            case Failure(exn) => Right(exn)
+          }).left
         } yield boardCheck
 
         result match {
