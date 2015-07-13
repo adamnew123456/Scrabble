@@ -153,6 +153,8 @@ class TurnBuilderTest extends TestCase {
     }
     
     assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map())
+    assertEquals(builder.getTiles, rack)
   }
   
   /**
@@ -386,5 +388,119 @@ class TurnBuilderTest extends TestCase {
     assertTrue(observer.wasNotified)
     assertEquals(builder.getAdditions, Map((1, 2) -> 'b', (3, 2) -> 'd'))
     assertEquals(builder.getTiles, TileGroup.fromTraversable(List('a', 'c')))
+  }
+  
+  /**
+   * Ensure that words which extend off the board fails.
+   */
+  def testNotOnBoardAddWord {
+    val board = Board.empty(5, 5)
+    val rack = TileGroup.fromTraversable("abcdef")
+    
+    val observer = new NotifyTester
+    val builder = new TurnBuilder(board, rack)
+    builder.attachObserver(observer.observe)
+    
+    builder.addWord("fade", (2, 2), Direction.Horizontal) match {
+      case Success(_)   => fail(s"Expected NotOnBoardError")
+      case Failure(err: NotOnBoardError) =>
+        assertEquals(err.col, 5)
+        assertEquals(err.row, 2)
+      case Failure(err) => fail(s"Expected NotOnBoardError, got $err")
+    }
+    
+    // Ensure that nothing propagated to the builder's board
+    assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map())
+    assertEquals(builder.getTiles, rack)
+  }
+  
+  /**
+   * Ensure that words which require word not in the rack fail.
+   */
+  def testNotOnRackAddWord {
+    val board = Board.empty(5, 5)
+    val rack = TileGroup.fromTraversable("abcdef")
+    
+    val observer = new NotifyTester
+    val builder = new TurnBuilder(board, rack)
+    builder.attachObserver(observer.observe)
+    
+    builder.addWord("zed", (2, 2), Direction.Horizontal) match {
+      case Success(_)   => fail(s"Expected NotInTileGroup")
+      case Failure(err: NotInTileGroup) =>
+        assertEquals(err.tiles, TileGroup.fromTraversable("z"))
+      case Failure(err) => fail(s"Expected NotOnBoardError, got $err")
+    }
+    
+    // Ensure that nothing propagated to the builder's board
+    assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map())
+    assertEquals(builder.getTiles, rack)
+  }
+  
+  /**
+   * Ensure that words which conflict with the content already in the builder,
+   * fails.
+   */
+  def testConflictAddWord {
+    val board = Board.empty(5, 5)
+    val rack = TileGroup.fromTraversable("abcdef")
+    
+    val observer = new NotifyTester
+    val builder = new TurnBuilder(board, rack)
+    builder.attachObserver(observer.observe)
+    
+    /* 0 1 2 3 4
+     * _ _ _ _ _ 0
+     * _ _ _ _ _ 1
+     * _ _ f _ _ 2
+     * _ _ e _ _ 3 
+     * _ _ d _ _ 4
+     */
+    builder.addWord("fed", (2, 2), Direction.Vertical) match {
+      case Success(_)   => ()
+      case Failure(exn) => fail(s"Unexpected $exn")
+    }
+    
+    observer.wasNotified = false
+    
+    /*
+     * First, ensure that any tiles which conflict with tiles already in the 
+     * builder, cause a failure. In this case, the "a" in cab conflicts with
+     * the "e" in fed
+     */
+    builder.addWord("cab", (1, 3), Direction.Horizontal) match {
+      case Success(_)   => fail(s"Expected PermanentTileError")
+      case Failure(exn: PermanentTileError) =>
+        assertEquals(exn.col, 2)
+        assertEquals(exn.row, 3)
+      case Failure(exn) => fail(s"Expected PermantentTileError, got $exn")
+    }
+    
+    assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, 
+      Map((2, 2) -> 'f', (2, 3) -> 'e', (2, 4) -> 'd'))
+    assertEquals(builder.getTiles, TileGroup.fromTraversable("abc"))
+    
+    /**
+     * Now, ensure that conflicts with the underlying board also causes an
+     * error.
+     */
+    val fedBoard = builder.getBoard
+    val fedRack = builder.getTiles
+    builder.reload(fedBoard, fedRack)
+    observer.wasNotified = false
+    
+    builder.addWord("cab", (1, 3), Direction.Horizontal) match {
+      case Success(_)   => fail(s"Expected DuplicateTilesError")
+      case Failure(exn: DuplicateTilesError) =>
+        assertEquals(exn.tiles, Set((2, 3)))
+      case Failure(exn) => fail(s"Expected DuplicateTilesError, got $exn")
+    }
+    
+    assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map())
+    assertEquals(builder.getTiles, TileGroup.fromTraversable("abc"))
   }
 }

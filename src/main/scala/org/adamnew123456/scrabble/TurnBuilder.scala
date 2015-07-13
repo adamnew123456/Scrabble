@@ -103,7 +103,7 @@ class TurnBuilder(private var board: Board, private var rack: TileGroup) {
         builtBoard.get(loc) match {
           case Some(`tile`) => false
           case None         => false
-          case _            => false
+          case _            => true
         }
     }
     
