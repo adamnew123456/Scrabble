@@ -40,7 +40,7 @@ class TurnBuilderTest extends TestCase {
         null
     }
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -87,7 +87,7 @@ class TurnBuilderTest extends TestCase {
         null
     }
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
     builder.attachObserver(observer.observe)
@@ -106,7 +106,7 @@ class TurnBuilderTest extends TestCase {
     // are unchanged
     assertFalse(observer.wasNotified)
     assertEquals(builder.getAdditions, Map())
-    assertEquals(builder.getTiles, TileGroup.fromTraversable(List('a', 'b', 'c', 'd')))
+    assertEquals(builder.getTiles, rack)
     
     // Next, test adding duplicate tiles inside the builder. Before that, we 
     // need to add a valid tile that we can try to overwrite
@@ -131,7 +131,7 @@ class TurnBuilderTest extends TestCase {
     // the original (1, 2) addition
     assertFalse(observer.wasNotified)
     assertEquals(builder.getAdditions, Map((1, 2) -> 'a'))
-    assertEquals(builder.getTiles, TileGroup.fromTraversable(List('b', 'c', 'd')))
+    assertEquals(builder.getTiles, TileGroup.fromTraversable("bcd"))
   }
   
   /**
@@ -139,7 +139,7 @@ class TurnBuilderTest extends TestCase {
    */
   def testNotOnRackAddTiles {
     val board = Board.empty(5, 5)    
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -161,7 +161,7 @@ class TurnBuilderTest extends TestCase {
    */
   def testNotOnBoardAddTiles {
     val board = Board.empty(5, 5)    
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -178,10 +178,11 @@ class TurnBuilderTest extends TestCase {
   
   /**
    * This tests that trying to remove tiles from the builder, successfully.
+   * 
    */
   def testRemoveTiles {
     val board = Board.empty(5, 5)
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -207,7 +208,7 @@ class TurnBuilderTest extends TestCase {
     // that the 'a' is back in the rack
     assertTrue(observer.wasNotified)
     assertEquals(builder.getAdditions, Map((0, 1) -> 'b'))
-    assertEquals(builder.getTiles, TileGroup.fromTraversable(List('a', 'c', 'd')))
+    assertEquals(builder.getTiles, TileGroup.fromTraversable("acd"))
   }
   
   /**
@@ -231,7 +232,7 @@ class TurnBuilderTest extends TestCase {
         null
     }
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -249,7 +250,7 @@ class TurnBuilderTest extends TestCase {
     // Check that the observer wasn't called, and nothing was changed
     assertFalse(observer.wasNotified)
     assertEquals(builder.getAdditions, Map())
-    assertEquals(builder.getTiles, TileGroup.fromTraversable(List('a', 'b', 'c', 'd')))
+    assertEquals(builder.getTiles, rack)
     
     // Now, test for tiles that are not on the board or the builder
     builder.removeTiles(Set((0, 0))) match {
@@ -259,6 +260,11 @@ class TurnBuilderTest extends TestCase {
         assertEquals(exn.row, 0)
       case Failure(exn) => fail(s"Expected PermanentTileError, got $exn")
     }
+    
+    // Check that the observer wasn't called, and nothing was changed
+    assertFalse(observer.wasNotified)
+    assertEquals(builder.getAdditions, Map())
+    assertEquals(builder.getTiles, rack)
   }
   
   /**
@@ -280,7 +286,7 @@ class TurnBuilderTest extends TestCase {
         null
     }
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd'))
+    val rack = TileGroup.fromTraversable("abcd")
     
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
@@ -324,7 +330,7 @@ class TurnBuilderTest extends TestCase {
         null 
     } 
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd')) 
+    val rack = TileGroup.fromTraversable("abcd") 
     val builder = new TurnBuilder(board, rack)
     
     // Do some changes. This just happens to be copied from testSuccessfulAddTiles
@@ -367,7 +373,7 @@ class TurnBuilderTest extends TestCase {
         null 
     } 
     
-    val rack = TileGroup.fromTraversable(List('a', 'b', 'c', 'd')) 
+    val rack = TileGroup.fromTraversable("abcd") 
     val observer = new NotifyTester
     val builder = new TurnBuilder(board, rack)
     builder.attachObserver(observer.observe)
