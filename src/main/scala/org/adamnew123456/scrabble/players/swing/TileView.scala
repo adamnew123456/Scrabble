@@ -45,7 +45,7 @@ case object Inactive extends TileMode {
  * subclass of JPanel, it can also act like a button by having mouse
  * actions attached to it.
  */
-class TileView(tile: Char, score: Int, var mode: TileMode) extends JPanel {
+class TileView(val tile: Char, val score: Int, var mode: TileMode) extends JPanel {
   val tileFont = new Font("Dialog", Font.PLAIN, 20)
   val pointFont = new Font("Dialog", Font.PLAIN, 14)
   
@@ -81,8 +81,6 @@ class TileView(tile: Char, score: Int, var mode: TileMode) extends JPanel {
     val xOffset = (dims.width / 2) - (fontWidth / 2)
     val yOffset = (dims.height / 2) + (fontHeight / 2)
     canvas.drawChars(tile.toString.toArray, 0, 1, xOffset, yOffset)
-    
-    println(s"${dims.width}x${dims.height}")
   }
 }
 
@@ -90,7 +88,7 @@ class TileView(tile: Char, score: Int, var mode: TileMode) extends JPanel {
  * EmptyTileView is responsible for taking the place of a TileView, when no
  * tile needs to be displayed.
  */
-object EmptyTileView extends JPanel {
+class EmptyTileView extends JPanel {
   val bgColor = new Color(0x333333)
   setMinimumSize(new Dimension(40, 40))
   
