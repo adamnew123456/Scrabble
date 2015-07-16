@@ -10,12 +10,22 @@ import scala.util.{ Try, Success, Failure }
 case class PermanentTileError(col: Int, row: Int) extends Throwable
 
 /**
+ * This is a smaller version of the TurnBuilder interface, which is passed to
+ * observers when the TurnBuilder changes. This is here because it is easier
+ * to mock than the entire TurnBuilder.
+ */
+trait ObservableTurnBuilder {
+  def getBoard: Board
+  def getTiles: TileGroup
+  def getAdditions: Map[(Int, Int), Char]
+}
+
+/**
  * This class allows a player to build a Board by adding and removing tiles,
  * while keeping the player's associated tile rack in sync with what happens
  * on the board.
  */
-class TurnBuilder(private var board: Board, private var rack: TileGroup) {
-  private val observers = new HashSet[TurnBuilder => Unit]
+class TurnBuilder(board: Board, rack: TileGroup) extends BaseObservable[ObservableTurnBuilder] with ObservableTurnBuilder {
   private val boardAdditions = new HashMap[(Int, Int), Char]
   private var currentBoard = board
   private var currentRack = rack
@@ -67,7 +77,7 @@ class TurnBuilder(private var board: Board, private var rack: TileGroup) {
         boardAdditions ++= tiles
         currentRack = rack
         
-        notifyObservers
+        notifyObservers(this)
         Success(())
       case Failure(exn) =>
         Failure(exn)
@@ -145,7 +155,7 @@ class TurnBuilder(private var board: Board, private var rack: TileGroup) {
             boardAdditions --= spaces
             currentRack = currentRack.merge(TileGroup.fromTraversable(tiles))
             
-            notifyObservers
+            notifyObservers(this)
             Success(())
         }
     }
@@ -159,25 +169,6 @@ class TurnBuilder(private var board: Board, private var rack: TileGroup) {
     boardAdditions.clear
     currentBoard = newBoard
     currentRack = newRack
-    notifyObservers
+    notifyObservers(this)
   }
-  
-  /**
-   * Registers an observer function, which is called whenever the
-   * board or rack changes.
-   */
-  def attachObserver(fn: TurnBuilder => Unit): Unit =
-    observers += fn
-    
-  /**
-   * Unregisters an observer function.
-   */
-  def detachObserver(fn: TurnBuilder => Unit): Unit =
-    observers -= fn
-    
-  /**
-   * Notifies all observers on a change.
-   */
-  def notifyObservers: Unit =
-    observers.foreach(_(this))
 }

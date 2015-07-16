@@ -19,7 +19,7 @@ class TurnBuilderTest extends TestCase {
   class NotifyTester {
     var wasNotified: Boolean = false
     
-    val observe = { (builder: TurnBuilder) =>
+    val observe = { (builder: ObservableTurnBuilder) =>
       wasNotified = true
     }
   }
