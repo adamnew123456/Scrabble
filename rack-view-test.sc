@@ -47,6 +47,29 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
     }
   }
 
+  /**
+   * This allows the user to manually change the selected tile without using
+   * the RackView.
+   */
+  val selectionGroup = new JPanel()
+  selectionGroup.setLayout(new BoxLayout(selectionGroup, BoxLayout.Y_AXIS))
+
+  val selectionIn = new JTextField("")
+  val selectionChange = new JButton("Change Selection")
+  selectionChange.addActionListener(new ActionClosure({ _ =>
+    val newSelection = selectionIn.getText
+    if (newSelection != "") {
+      println(s"Setting selection: ${newSelection(0)}")
+      selection.set(newSelection(0))
+    } else {
+      println("Clearing selection")
+      selection.clear
+    }
+  }))
+
+  selectionGroup.add(selectionIn)
+  selectionGroup.add(selectionChange)
+
   /*
    * This runs the observable inside of the RackView, and changes the currently
    * available tiles.
@@ -74,6 +97,7 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
 
   main.getContentPane.add(tileChangeGroup, BorderLayout.SOUTH)
   main.getContentPane.add(selectedTile, BorderLayout.NORTH)
+  main.getContentPane.add(selectionGroup, BorderLayout.EAST)
   main.getContentPane.add(rackView, BorderLayout.CENTER)
 
   main.pack()

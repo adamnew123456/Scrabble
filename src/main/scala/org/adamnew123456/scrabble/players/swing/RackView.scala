@@ -8,9 +8,22 @@ import org.adamnew123456.scrabble._
 
 /**
  * The RackView is responsible for visualizing the contents of the player's
- * rack of tiles using several TileViews.
+ * rack of tiles using several TileViews, and allowing the player to select
+ * a tile by clicking on it.
  */
 class RackView(config: Config, selection: TileSelection) extends JPanel {
+  /**
+   * Make sure that the RackView reflects the state of the selection, even
+   * if somebody else changes it.
+   */
+  selection.attachObserver {
+    case Some(tile) =>
+      clearSelected
+      setSelected(tile)
+    case None =>
+      clearSelected
+  }
+  
   /**
    * Makes each tile on the rack Active, thus removing any Selected highlights
    * from any of the tiles.
@@ -23,6 +36,23 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
   }
   
   /**
+   * Sets one tile of the given kind as selected. This ensures that, if one of
+   * the given tiles is on the rack, the mode of the tile is changed. Returns true
+   * if the selection was set, or false if no selected tile could be found.
+   */
+  private def setSelected(tile: Char): Boolean = {
+    tiles.foreach {
+      case (tileView: TileView) =>
+        if (tileView.tile == tile) {
+          tileView.mode = Selected
+          tileView.repaint()
+          return true
+        }
+      case _ => ()
+    }
+    false
+  }  
+  /**
    * Creates a new EmptyTileView, and sets up a ButtonListener to capture 
    * clicks to the TileView.
    */
@@ -31,7 +61,6 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
     empty.addMouseListener(new ClosureButtonListener({ event: MouseEvent =>
       (event.getID, event.getButton) match {
         case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
-          clearSelected
           selection.clear
         case _ => ()
       }
@@ -50,10 +79,6 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
       (event.getID, event.getButton) match {
         case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
           selection.set(tileView.tile)
-          
-          clearSelected
-          tileView.mode = Selected
-          tileView.repaint()
         case _ => ()
       }
     }))
@@ -96,19 +121,9 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
     // that matches it
     if (selection.hasSelection) {
       println("Updating selection")
-      var hasSelected = false
-      tiles.foreach {
-        case (tileView: TileView) =>
-          if (tileView.tile == selection.get && !hasSelected) {
-            tileView.mode = Selected
-            hasSelected = true
-          }
-        case _ => ()
-      }
-      
-      // Somehow, we lost the selected tile. Since it isn't visible anywhere,
-      // go ahead and unselect it
-      if (!hasSelected) {
+      if (!setSelected(selection.get)) {
+        // Somehow, we lost the selected tile. Since it isn't visible anywhere,
+        // go ahead and unselect it
         println("Updating selection failed")
         selection.clear
       }
