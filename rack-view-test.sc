@@ -6,11 +6,11 @@ import org.adamnew123456.scrabble._
 import org.adamnew123456.scrabble.players.swing._
 
 class RunClosure(closure: () => Unit) extends Runnable {
-    def run = closure()
+  def run = closure()
 }
 
 class ActionClosure(closure: ActionEvent => Unit) extends ActionListener {
-    def actionPerformed(event: ActionEvent) = closure(event)
+  def actionPerformed(event: ActionEvent) = closure(event)
 }
 
 class MockObservableTurnBuilder extends BaseObservable[ObservableTurnBuilder] with ObservableTurnBuilder {
@@ -28,36 +28,23 @@ class MockObservableTurnBuilder extends BaseObservable[ObservableTurnBuilder] wi
   def getAdditions = Map()
 }
 
-SwingUtilities.invokeLater(new RunClosure({ () =>
-  val main = new JFrame("RackView Test")
-  main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
-  main.getContentPane.setLayout(new BorderLayout())
-
-  /*
-   * This displays the currently selected tile.
-   */
-  val selection = new TileSelection()
-  val selectedTile = new JLabel("No tile selected")
-  
+class SelectionView(selection: TileSelection) extends JLabel("No tile selected") {
   selection.attachObserver { tile: Option[Char] =>
     println(s"Selection changed: $tile")
     tile match {
-      case Some(tile) => selectedTile.setText(tile.toString)
-      case None       => selectedTile.setText("No tile selected")
+      case Some(tile) => setText("Selected: " + tile)
+      case None       => setText("No tile selected")
     }
   }
+}
 
-  /**
-   * This allows the user to manually change the selected tile without using
-   * the RackView.
-   */
-  val selectionGroup = new JPanel()
-  selectionGroup.setLayout(new BoxLayout(selectionGroup, BoxLayout.Y_AXIS))
+class SelectionEdit(selection: TileSelection) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
 
-  val selectionIn = new JTextField("")
-  val selectionChange = new JButton("Change Selection")
-  selectionChange.addActionListener(new ActionClosure({ _ =>
-    val newSelection = selectionIn.getText
+  val input = new JTextField("")
+  val change = new JButton("Change Selection")
+  change.addActionListener(new ActionClosure({ _ =>
+    val newSelection = input.getText
     if (newSelection != "") {
       println(s"Setting selection: ${newSelection(0)}")
       selection.set(newSelection(0))
@@ -67,37 +54,47 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
     }
   }))
 
-  selectionGroup.add(selectionIn)
-  selectionGroup.add(selectionChange)
+  add(input)
+  add(change)
+}
 
-  /*
-   * This runs the observable inside of the RackView, and changes the currently
-   * available tiles.
-   */
-  val tileChangeGroup = new JPanel()
-  tileChangeGroup.setLayout(new BoxLayout(tileChangeGroup, BoxLayout.X_AXIS))
+class RackEdit(turnBuilder: MockObservableTurnBuilder) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.X_AXIS))
 
-  val currentTiles = new JTextField("abcdefg")
-  tileChangeGroup.add(currentTiles)
+  val tiles = new JTextField("abcdefg")
+  val set = new JButton("Set Tiles")
+  set.addActionListener(new ActionClosure({ _ =>
+    println("Setting tiles: ${tiles.getText}")
+    val tileString = tiles.getText.take(7)
 
-  val mockTurnBuilder = new MockObservableTurnBuilder()
-  val setTiles = new JButton("Set Tiles")
-  setTiles.addActionListener(new ActionClosure({ _ =>
-    println(s"Setting tiles: ${currentTiles.getText}")
-    val tileString = currentTiles.getText.take(7)
     val rack = TileGroup.fromTraversable(tileString)
-    mockTurnBuilder.setRack(rack)
+    turnBuilder.setRack(rack)
   }))
-  tileChangeGroup.add(setTiles)
+
+  add(tiles)
+  add(set)
+}
+
+SwingUtilities.invokeLater(new RunClosure({ () =>
+  val main = new JFrame("RackView Test")
+  main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+  main.getContentPane.setLayout(new BorderLayout())
+
+  val selection = new TileSelection()
+  val turnBuilder = new MockObservableTurnBuilder()
+
+  val selectionView = new SelectionView(selection)
+  val selectionEdit = new SelectionEdit(selection)
+  val rackEdit = new RackEdit(turnBuilder)
 
   val config = new FileConfig("bin/letter-dist.txt", "bin/letter-score.txt", "bin/words.txt")
   val rackView = new RackView(config, selection)
 
-  mockTurnBuilder.attachObserver(rackView.builderObserver)
+  turnBuilder.attachObserver(rackView.builderObserver)
 
-  main.getContentPane.add(tileChangeGroup, BorderLayout.SOUTH)
-  main.getContentPane.add(selectedTile, BorderLayout.NORTH)
-  main.getContentPane.add(selectionGroup, BorderLayout.EAST)
+  main.getContentPane.add(rackEdit, BorderLayout.SOUTH)
+  main.getContentPane.add(selectionView, BorderLayout.NORTH)
+  main.getContentPane.add(selectionEdit, BorderLayout.EAST)
   main.getContentPane.add(rackView, BorderLayout.CENTER)
 
   main.pack()
