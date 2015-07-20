@@ -2,7 +2,6 @@ package org.adamnew123456.scrabble.players.swing
 
 import java.awt.event.MouseEvent
 import javax.swing.{ BoxLayout, JPanel }
-import scala.collection.mutable.HashSet
 
 import org.adamnew123456.scrabble._
 
@@ -12,7 +11,7 @@ import org.adamnew123456.scrabble._
  * a tile by clicking on it.
  */
 class RackView(config: Config, selection: TileSelection) extends JPanel {
-  /**
+  /*
    * Make sure that the RackView reflects the state of the selection, even
    * if somebody else changes it.
    */
@@ -85,12 +84,13 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
     tileView
   }
   
+  // Start out with 7 empty tiles, until we get the correct state of the rack
   setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS))
   var tiles: List[JPanel] = List.fill(7)(makeEmptyTileView)
   updateContainer
   
   /**
-   * Gets all the new members of 'tiles' to be visible in this container.
+   * Gets all the members of 'tiles' to be visible in this container.
    */
   private def updateContainer {
     tiles.foreach(add(_))
@@ -102,13 +102,10 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
    * rack changes.
    */
   val builderObserver = { builder: ObservableTurnBuilder =>
-    println("Removing all old tiles")
     tiles.foreach(remove(_))
     
     val rackTiles = builder.getTiles.asList
     val emptyTiles = 7 - rackTiles.length
-    
-    println(s"Padding with $emptyTiles empty tiles")
     
     // The new group of tiles is a group of TileViews for each tile used in 
     // the rack, and a group of EmptyTileViews for each unused part of the rack
@@ -120,11 +117,9 @@ class RackView(config: Config, selection: TileSelection) extends JPanel {
     // If a tile is currently selected, then select one of the tiles on the rack
     // that matches it
     if (selection.hasSelection) {
-      println("Updating selection")
       if (!setSelected(selection.get)) {
         // Somehow, we lost the selected tile. Since it isn't visible anywhere,
         // go ahead and unselect it
-        println("Updating selection failed")
         selection.clear
       }
     }
