@@ -21,11 +21,25 @@ trait ObservableTurnBuilder {
 }
 
 /**
+ * This is the other half of TurnBuilder - the mutable interface, which can be
+ * implemented separately from ObservableTurnBuilder (the immutable interface).
+ */
+trait MutableTurnBuilder {
+  def addTiles(tiles: Map[(Int, Int), Char]): Try[Unit]
+  def addWord(word: String, location: (Int, Int), dir: Direction.Type): Try[Unit]
+  def removeTiles(spaces: Set[(Int, Int)]): Try[Unit]
+  def reload(board: Board, rack: TileGroup): Unit
+}
+
+/**
  * This class allows a player to build a Board by adding and removing tiles,
  * while keeping the player's associated tile rack in sync with what happens
  * on the board.
  */
-class TurnBuilder(board: Board, rack: TileGroup) extends BaseObservable[ObservableTurnBuilder] with ObservableTurnBuilder {
+class TurnBuilder(board: Board, rack: TileGroup) 
+    extends BaseObservable[ObservableTurnBuilder]
+    with ObservableTurnBuilder 
+    with MutableTurnBuilder {
   private val boardAdditions = new HashMap[(Int, Int), Char]
   private var currentBoard = board
   private var currentRack = rack
