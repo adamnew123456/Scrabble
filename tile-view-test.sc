@@ -1,4 +1,4 @@
-import java.awt._
+import java.awt.BorderLayout
 import java.awt.event._
 import javax.swing._
 
@@ -13,6 +13,26 @@ class ActionClosure(closure: ActionEvent => Unit) extends ActionListener {
     def actionPerformed(event: ActionEvent) = closure(event)
 }
 
+class TileModeEditor(callback: TileMode => Unit) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
+
+  val group = new ButtonGroup()
+  val List(makeActive, makeSelected, makeInactive) =
+    List(Active, Selected, Inactive).zip(List("Active", "Selected", "Inactive")).map {
+      case (mode, label) =>
+        val button = new JRadioButton(label, false)
+        button.addActionListener(new ActionClosure({ _ =>
+          callback(mode)
+        }))
+
+        group.add(button)
+        add(button)
+        button
+    }
+
+  makeActive.setSelected(true)
+}
+
 SwingUtilities.invokeLater(new RunClosure({ () =>
     val main = new JFrame("TileView Test")
     main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
@@ -22,36 +42,12 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
     buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS))
 
     val tileView = new TileView('f', 5, Active)
+    val tileModeEditor = new TileModeEditor({ mode: TileMode =>
+      tileView.mode = mode
+      tileView.repaint()
+    })
 
-    val modeGroup = new ButtonGroup()
-
-    val activeButton = new JRadioButton("Active", true)
-    activeButton.addActionListener(new ActionClosure({ _ =>
-        tileView.mode = Active
-        tileView.repaint()
-    }))
-
-    val selectedButton = new JRadioButton("Selected", false)
-    selectedButton.addActionListener(new ActionClosure({ _ =>
-        tileView.mode = Selected
-        tileView.repaint()
-    }))
-
-    val inactiveButton = new JRadioButton("Inactive", false)
-    inactiveButton.addActionListener(new ActionClosure({ _ =>
-        tileView.mode = Inactive
-        tileView.repaint()
-    }))
-
-    modeGroup.add(activeButton)
-    modeGroup.add(selectedButton)
-    modeGroup.add(inactiveButton)
-
-    buttonPanel.add(activeButton)
-    buttonPanel.add(selectedButton)
-    buttonPanel.add(inactiveButton)
-
-    main.getContentPane.add(buttonPanel, BorderLayout.EAST)
+    main.getContentPane.add(tileModeEditor, BorderLayout.EAST)
     main.getContentPane.add(tileView, BorderLayout.CENTER)
 
     main.pack()
