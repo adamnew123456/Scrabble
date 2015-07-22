@@ -140,8 +140,9 @@ object TileGroup {
  * off with a particular distribution of tiles, and can then have tiles taken
  * out, or swapped.
  */
-class TileBag(tileDistribution: Map[Char, Int]) {
-  val randomGen = new Random
+class TileBag(tileDistribution: Map[Char, Int], randomGen: Random) {
+  def this(tileDistribution: Map[Char, Int]) =
+    this(tileDistribution, new Random)
 
   val tiles = new HashMap[Char, Int]()
   tiles ++= tileDistribution

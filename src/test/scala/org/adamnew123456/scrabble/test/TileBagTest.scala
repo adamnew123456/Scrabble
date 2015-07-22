@@ -1,5 +1,6 @@
 package org.adamnew123456.scrabble.test
 
+import java.util.Random
 import scala.util.{Try, Success, Failure}
 
 import org.adamnew123456.scrabble.{TileBag, TileGroup, NoTilesError}
@@ -33,7 +34,8 @@ class TileBagTest extends TestCase {
    * subsets.
    */
   def testDraw() {
-    val clonedBag = new TileBag(tileDist)
+    val fixedRandom = new Random(0)
+    val clonedBag = new TileBag(tileDist, fixedRandom)
     
     val tilesA = bag.drawTiles(numTiles / 2) match {
       case Success(tiles) => tiles
