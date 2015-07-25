@@ -1,4 +1,4 @@
-import java.awt._
+import java.awt.BorderLayout
 import java.awt.event._
 import javax.swing._
 
@@ -28,14 +28,27 @@ class MockObservableTurnBuilder extends BaseObservable[ObservableTurnBuilder] wi
   def getAdditions = Map()
 }
 
-class SelectionView(selection: TileSelection) extends JLabel("No tile selected") {
+class SelectionView(selection: TileSelection, multiSelection: MultiTileSelection) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
+
+  val selectionLabel = new JLabel("Single:")
   selection.attachObserver { tile: Option[Char] =>
-    println(s"Selection changed: $tile")
+    println(s"Single selection changed: $tile")
     tile match {
-      case Some(tile) => setText("Selected: " + tile)
-      case None       => setText("No tile selected")
+      case Some(tile) => selectionLabel.setText("Single: " + tile)
+      case None       => selectionLabel.setText("Single:")
     }
   }
+
+  val multiLabel = new JLabel("Multiple:")
+  multiSelection.attachObserver { tiles: TileGroup =>
+    val tileStr = tiles.asList.mkString(",")
+    println("Multiple selection changed: " + tileStr)
+    multiLabel.setText("Multiple: " + tileStr)
+  }
+
+  add(selectionLabel)
+  add(multiLabel)
 }
 
 class SelectionEdit(selection: TileSelection) extends JPanel {
@@ -75,26 +88,50 @@ class RackEdit(turnBuilder: MockObservableTurnBuilder) extends JPanel {
   add(set)
 }
 
+class ModeSwitcher(callback: UIMode.Type => Unit) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
+
+  val group = new ButtonGroup()
+  val List(makeReplace, makeTurn, makeIdle) = 
+    List(UIMode.Replace, UIMode.Turn, UIMode.Idle).zip(List("Replace", "Turn", "Idle")).map {
+      case (mode, label) =>
+        val button = new JRadioButton(label, false)
+        button.addActionListener(new ActionClosure({ _ =>
+          callback(mode)
+        }))
+
+        group.add(button)
+        add(button)
+        button
+    }
+
+  makeTurn.setSelected(true)
+}
+
 SwingUtilities.invokeLater(new RunClosure({ () =>
   val main = new JFrame("RackView Test")
   main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
   main.getContentPane.setLayout(new BorderLayout())
 
   val selection = new TileSelection()
+  val multiSelection = new MultiTileSelection()
   val turnBuilder = new MockObservableTurnBuilder()
 
-  val selectionView = new SelectionView(selection)
+  val selectionView = new SelectionView(selection, multiSelection)
   val selectionEdit = new SelectionEdit(selection)
   val rackEdit = new RackEdit(turnBuilder)
 
   val config = new FileConfig("bin/letter-dist.txt", "bin/letter-score.txt", "bin/words.txt")
-  val rackView = new RackView(config, selection)
+  val rackView = new RackView(config, selection, multiSelection)
 
   turnBuilder.attachObserver(rackView.builderObserver)
+
+  val modeSwitcher = new ModeSwitcher(rackView.setMode(_))
 
   main.getContentPane.add(rackEdit, BorderLayout.SOUTH)
   main.getContentPane.add(selectionView, BorderLayout.NORTH)
   main.getContentPane.add(selectionEdit, BorderLayout.EAST)
+  main.getContentPane.add(modeSwitcher, BorderLayout.WEST)
   main.getContentPane.add(rackView, BorderLayout.CENTER)
 
   main.pack()
