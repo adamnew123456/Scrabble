@@ -25,6 +25,12 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
   tiles((0, 0)) = new EmptyTileView()
   updateContainer(1, 1)
   
+  private var currentlyEnabled = true
+  def setMode(mode: UIMode.Type) = mode match {
+    case UIMode.Turn => currentlyEnabled = true
+    case _           => currentlyEnabled = false
+  }
+  
   /**
    * Adds all the tiles to this widget, in the proper location on the grid, and
    * makes them visible.
@@ -46,16 +52,18 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
     val score = config.letterScores(tile)
     val tileView = new TileView(tile, score, Active)
     val handler = new ClosureButtonListener({ event: MouseEvent =>
-      (event.getID, event.getButton) match {
-        case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
-          selection.clear
-          
-        case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON3) =>
-          builder.removeTiles(Set((col, row))) match {
-            case Failure(err) => reporter.report(err)
-            case _            => ()
-          }
-        case _ => ()
+      if (currentlyEnabled) {
+        (event.getID, event.getButton) match {
+          case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
+            selection.clear
+            
+          case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON3) =>
+            builder.removeTiles(Set((col, row))) match {
+              case Failure(err) => reporter.report(err)
+              case _            => ()
+            }
+          case _ => ()
+        }
       }
     })
     
@@ -70,11 +78,13 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
     val score = config.letterScores(tile)
     val tileView = new TileView(tile, score, Inactive)
     val handler = new ClosureButtonListener({ event: MouseEvent =>
-      (event.getID, event.getButton) match {
-        case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
-          selection.clear
-          
-        case _ => ()
+      if (currentlyEnabled) {
+        (event.getID, event.getButton) match {
+          case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
+            selection.clear
+            
+          case _ => ()
+        }
       }
     })
     
@@ -88,18 +98,20 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
   private def makeEmptyTile(col: Int, row: Int): EmptyTileView = {
     val emptyTile = new EmptyTileView()
     val handler = new ClosureButtonListener({ event: MouseEvent =>
-      (event.getID, event.getButton) match {
-        case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
-          if (selection.hasSelection) {
-            val selected = selection.get
-            selection.clear
-            
-            builder.addTiles(Map((col, row) -> selected)) match {
-              case Failure(err) => reporter.report(err)
-              case _            => ()
+      if (currentlyEnabled) {
+        (event.getID, event.getButton) match {
+          case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
+            if (selection.hasSelection) {
+              val selected = selection.get
+              selection.clear
+              
+              builder.addTiles(Map((col, row) -> selected)) match {
+                case Failure(err) => reporter.report(err)
+                case _            => ()
+              }
             }
-          }
-        case _ => ()
+          case _ => ()
+        }
       }
     })
     

@@ -1,4 +1,4 @@
-import java.awt._
+import java.awt.BorderLayout
 import java.awt.event._
 import javax.swing._
 import scala.collection.mutable.HashMap
@@ -43,6 +43,26 @@ class SelectionEdit(selection: TileSelection) extends JPanel {
 
   add(input)
   add(change)
+}
+
+class ModeSwitcher(callback: UIMode.Type => Unit) extends JPanel {
+  setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
+
+  val group = new ButtonGroup()
+  val List(makeReplace, makeTurn, makeIdle) = 
+    List(UIMode.Replace, UIMode.Turn, UIMode.Idle).zip(List("Replace", "Turn", "Idle")).map {
+      case (mode, label) =>
+        val button = new JRadioButton(label, false)
+        button.addActionListener(new ActionClosure({ _ =>
+          callback(mode)
+        }))
+
+        group.add(button)
+        add(button)
+        button
+    }
+
+  makeTurn.setSelected(true)
 }
 
 /**
@@ -121,6 +141,8 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
   val boardView = new BoardView(config, selection, errorReporter, turnBuilder)
 
   turnBuilder.attachObserver(boardView.builderObserver)
+  
+  val modeSwitcher = new ModeSwitcher(boardView.setMode(_))
 
   // Get the initial part of the board set up
   boardView.builderObserver(turnBuilder)
@@ -128,6 +150,7 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
   main.getContentPane.add(errorView, BorderLayout.SOUTH)
   main.getContentPane.add(selectionView, BorderLayout.NORTH)
   main.getContentPane.add(selectionEdit, BorderLayout.EAST)
+  main.getContentPane.add(modeSwitcher, BorderLayout.WEST)
   main.getContentPane.add(boardView, BorderLayout.CENTER)
 
   main.pack()
