@@ -130,7 +130,7 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
       tiles.values.map(remove(_))
       tiles.clear
       
-      val board = observableBuilder.getBoard
+      val board = observableBuilder.getBaseBoard
       val additions = observableBuilder.getAdditions
       
       // This has to be updated, since the default is 1x1 and no board would 
