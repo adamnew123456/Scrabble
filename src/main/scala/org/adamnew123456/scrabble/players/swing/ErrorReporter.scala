@@ -1,5 +1,6 @@
 package org.adamnew123456.scrabble.players.swing
 
+import java.awt.event.MouseEvent
 import javax.swing.{ JLabel, Timer }
 
 import org.adamnew123456.scrabble.BaseObservable
@@ -29,24 +30,22 @@ class ErrorReporter extends BaseObservable[Option[Throwable]] {
  * This is responsible for transporting errors from one part of the program
  * to another - primarily, from the BoardView to the status bar.
  * 
- * After a delay, the SwingErrorReporter will set its error to None and notify all
- * observers. Note that this delay is reset every time a new error comes in.
+ * When clicked, the current message is reset - until then, the current error 
+ * is displayed.
  */
-class SwingErrorReporter(delayMS: Int, reporter: ErrorReporter) extends JLabel("OK") {
-  val notifyReset = new ClosureActionListener({ _ =>
-    reporter.clear
-  })
-  
-  val timer = new Timer(delayMS, notifyReset)
-  timer.setRepeats(false)
+class SwingErrorReporter(reporter: ErrorReporter) extends JLabel("OK") {
+  addMouseListener(new ClosureButtonListener({ event: MouseEvent =>
+    (event.getID, event.getButton) match {
+      case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
+        reporter.clear
+      case _ => ()
+    }
+  }))
   
   reporter.attachObserver {
     case Some(error) => 
       setText(error.toString)
-      timer.stop
-      timer.start
     case None        => 
       setText("OK")
-      timer.stop
   }
 }

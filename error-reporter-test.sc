@@ -36,7 +36,7 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
   main.getContentPane.setLayout(new BorderLayout())
 
   val reporter = new ErrorReporter()
-  val errorView = new SwingErrorReporter(5000, reporter)
+  val errorView = new SwingErrorReporter(reporter)
   val errorEdit = new ErrorEdit(reporter)
 
   reporter.attachObserver {

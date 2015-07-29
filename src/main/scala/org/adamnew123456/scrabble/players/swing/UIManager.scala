@@ -11,6 +11,13 @@ import org.adamnew123456.scrabble.{ Board, Config, EndGame, TileGroup, TurnBuild
  * the Game.
  */
 class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
+  /**
+   * This is used just to display a message in the errorReporter.
+   */
+  case class Message(msg: String) extends Throwable {
+    override def toString = msg
+  }
+  
   val turnBuilder = new TurnBuilder(Board.empty(15, 15), TileGroup.fromTraversable(""))
   
   val boardSelection = new TileSelection()
@@ -80,7 +87,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     rackView.setMode(UIMode.Replace)
     mode = UIMode.Replace
 
-    errorReporter.report(new Throwable("Replace your tiles"))
+    errorReporter.report(Message("Replace your tiles"))
     turnBuilder.reloadTiles(tiles)
     submit.setEnabled(true)
   }
@@ -90,7 +97,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     rackView.setMode(UIMode.Turn)
     mode = UIMode.Turn
 
-    errorReporter.report(new Throwable("Do your turn"))
+    errorReporter.report(Message("Do your turn"))
     turnBuilder.reload(board, tiles)
     submit.setEnabled(true)
   }
@@ -112,7 +119,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     turnBuilder.reload(end.board, TileGroup.fromTraversable(""))
     scoreView.update(end.scores)
     
-    errorReporter.report(new Throwable(end.reason.toString))
+    errorReporter.report(Message(end.reason.toString))
     
     boardView.setMode(UIMode.Idle)
     rackView.setMode(UIMode.Idle)
