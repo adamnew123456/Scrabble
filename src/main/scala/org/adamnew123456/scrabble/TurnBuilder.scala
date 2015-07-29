@@ -16,6 +16,7 @@ case class PermanentTileError(col: Int, row: Int) extends Throwable
  */
 trait ObservableTurnBuilder {
   def getBoard: Board
+  def getBaseBoard: Board
   def getTiles: TileGroup
   def getAdditions: Map[(Int, Int), Char]
 }
@@ -57,6 +58,11 @@ class TurnBuilder(board: Board, rack: TileGroup)
       // rejected it
       case _                 => throw new MatchError
     }
+
+  /**
+   * Gets the base board, which is the underlying board sans modifications.
+   */
+  def getBaseBoard: Board = currentBoard
   
   /**
    * Converts the internal representation of the player's remaining tiles 
