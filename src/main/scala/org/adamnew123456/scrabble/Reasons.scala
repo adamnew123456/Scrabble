@@ -16,7 +16,7 @@ case object EmptyBagEnding extends EndReason {
  * A player has deliberately quit the game.
  */
 case class ForfeitEnding(player: String) extends EndReason {
-  override def toString = "Player $player has forfeited"
+  override def toString = s"Player $player has forfeited"
 }
 
 /**
