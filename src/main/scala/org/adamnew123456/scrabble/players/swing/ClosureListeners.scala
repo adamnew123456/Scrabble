@@ -27,3 +27,10 @@ class ClosureButtonListener(closure: MouseEvent => Unit) extends MouseListener {
   override def mousePressed(event: MouseEvent) = closure(event)
   override def mouseReleased(event: MouseEvent) = closure(event)
 }
+
+/**
+ * Makes a Runnable, which executes a closure.
+ */
+class ClosureRunnable(closure: => Unit) extends Runnable {
+  override def run = closure
+}
