@@ -29,7 +29,9 @@ trait MutableTurnBuilder {
   def addTiles(tiles: Map[(Int, Int), Char]): Try[Unit]
   def addWord(word: String, location: (Int, Int), dir: Direction.Type): Try[Unit]
   def removeTiles(spaces: Set[(Int, Int)]): Try[Unit]
+
   def reload(board: Board, rack: TileGroup): Unit
+  def reloadTiles(rack: TileGroup): Unit
 }
 
 /**
@@ -188,6 +190,14 @@ class TurnBuilder(board: Board, rack: TileGroup)
   def reload(newBoard: Board, newRack: TileGroup): Unit = {
     boardAdditions.clear
     currentBoard = newBoard
+    currentRack = newRack
+    notifyObservers(this)
+  }
+
+  /**
+   * Reloads the rack only, not affecting the board.
+   */
+  def reloadTiles(newRack: TileGroup): Unit = {
     currentRack = newRack
     notifyObservers(this)
   }
