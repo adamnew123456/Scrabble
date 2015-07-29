@@ -24,6 +24,7 @@ class MockObservableTurnBuilder extends BaseObservable[ObservableTurnBuilder] wi
   }
 
   def getBoard = emptyBoard
+  def getBaseBoard = emptyBoard
   def getTiles = rack
   def getAdditions = Map()
 }
