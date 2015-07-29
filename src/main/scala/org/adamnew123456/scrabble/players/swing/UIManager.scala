@@ -27,7 +27,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
   val scoreView = new ScoreView()
   val rackView = new RackView(config, boardSelection, replaceSelection)
   val boardView = new BoardView(config, boardSelection, errorReporter, turnBuilder)
-  val errorView = new SwingErrorReporter(5000, errorReporter)
+  val errorView = new SwingErrorReporter(errorReporter)
 
   turnBuilder.attachObserver(rackView.builderObserver)
   turnBuilder.attachObserver(boardView.builderObserver)
@@ -100,6 +100,10 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     errorReporter.report(Message("Do your turn"))
     turnBuilder.reload(board, tiles)
     submit.setEnabled(true)
+  }
+  
+  def otherPlayerTurn(player: String) {
+    errorReporter.report(Message(s"Current player: $player"))
   }
   
   def startTurn(board: Board, tiles: TileGroup, scores: Map[String, Int]) {

@@ -18,11 +18,13 @@ val returnQueue = new ArrayBlockingQueue[UIMessage](1)
 
 val ui = new org.adamnew123456.scrabble.players.swing.UIManager(config, returnQueue)
 val humanPlayer = new SwingPlayer("You", config, ui, returnQueue)
+val humanObserver = new SwingObserver(ui)
 
 val aiPlayer = new NaiveComputerPlayer("<Computer 1>", config)
 val aiPlayer2 = new NaiveComputerPlayer("<Computer 2>", config)
 
 val game = new Game(board, config, List(aiPlayer, humanPlayer, aiPlayer2))
+game.attachObserver(humanObserver)
 
 SwingUtilities.invokeLater(new RunClosure({ () =>
   println("Starting UI thread...")
