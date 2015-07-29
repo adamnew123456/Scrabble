@@ -49,7 +49,9 @@ class TileView(val tile: Char, val score: Int, var mode: TileMode) extends JPane
   val tileFont = new Font("Dialog", Font.PLAIN, 20)
   val pointFont = new Font("Dialog", Font.PLAIN, 14)
   
-  setMinimumSize(new Dimension(40, 40))
+  override def getMinimumSize = getPreferredSize
+  override def getMaximumSize = getPreferredSize
+  override def getPreferredSize = new Dimension(40, 40)
   
   protected override def paintComponent(canvas: Graphics) {
     /*

@@ -1,5 +1,6 @@
 package org.adamnew123456.scrabble.players.swing
 
+import java.awt.Dimension
 import java.awt.event.MouseEvent
 import javax.swing.{ BoxLayout, JPanel }
 import scala.collection.mutable.HashMap
@@ -220,6 +221,11 @@ class RackView(config: Config, boardSelection: TileSelection, replaceSelection: 
     def onTileClick(event: MouseEvent, tileView: TileView) = ()
     def onBuilderChange(builder: ObservableTurnBuilder) = ()
   }
+
+  // Ensure that we are as big as we need to be
+  override def getMinimumSize = getPreferredSize
+  override def getMaximumSize = getPreferredSize
+  override def getPreferredSize = new Dimension(40 * 7, 40)
   
   private var currentSuite: RackCallbackSuite = TurnSuite
   

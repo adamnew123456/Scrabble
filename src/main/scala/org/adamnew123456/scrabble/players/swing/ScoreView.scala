@@ -1,5 +1,6 @@
 package org.adamnew123456.scrabble.players.swing
 
+import java.awt.Dimension
 import javax.swing.{ JScrollPane, JTable }
 import javax.swing.table.AbstractTableModel
 
@@ -11,7 +12,11 @@ class ScoreView extends JScrollPane {
     var currentScores = Map[String, Int]()
     // Best players are determined by score, in this case
     var bestPlayers: List[String] = Nil
-   
+
+    def getMinimumSize = getPreferredSize
+    def getMaximumSize = getPreferredSize
+    def getPreferredSize = new Dimension(100, 100)
+
     def getColumnCount = 2
     override def getColumnName(idx: Int) = idx match {
       case 0 => "Player"

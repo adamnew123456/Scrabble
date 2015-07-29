@@ -1,6 +1,6 @@
 package org.adamnew123456.scrabble.players.swing
 
-import java.awt.GridLayout
+import java.awt.{ Dimension, GridLayout }
 import java.awt.event.MouseEvent
 import javax.swing.JPanel
 import scala.collection.mutable.{ HashMap, HashSet } 
@@ -30,6 +30,11 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
     case UIMode.Turn => currentlyEnabled = true
     case _           => currentlyEnabled = false
   }
+
+  var currentSize = (40, 40)
+  override def getMinimumSize = getPreferredSize
+  override def getMaximumSize = getPreferredSize
+  override def getPreferredSize = new Dimension(currentSize._1, currentSize._2)
   
   /**
    * Adds all the tiles to this widget, in the proper location on the grid, and
@@ -42,6 +47,7 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
       add(component)
     }
     
+    currentSize = (width * 40, height * 40)
     revalidate
   }
   
