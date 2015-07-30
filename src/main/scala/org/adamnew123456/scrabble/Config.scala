@@ -81,9 +81,9 @@ class ResourceConfig extends StreamConfig {
   private def loadResource(path: String): Scanner =
     new Scanner(getClass().getResourceAsStream(path))
 
-  val letterDistribution = loadLetterDistribution(loadResource("/res/letter-dist.txt"))
-  val letterScores = loadLetterScores(loadResource("/res/letter-score.txt"))
-  val wordList = loadWordList(loadResource("/res/words.txt"))
+  val letterDistribution = loadLetterDistribution(loadResource("/letter-dist.txt"))
+  val letterScores = loadLetterScores(loadResource("/letter-score.txt"))
+  val wordList = loadWordList(loadResource("/words.txt"))
   val rackSize = 7
 }
 
