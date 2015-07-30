@@ -92,6 +92,7 @@ class TestTurnBuilder extends BaseObservable[ObservableTurnBuilder] with Mutable
       ???
   }
 
+  def getBaseBoard = stockBoard
   def getTiles = stockTiles
   def getAdditions = additions.toMap
 
@@ -122,6 +123,8 @@ class TestTurnBuilder extends BaseObservable[ObservableTurnBuilder] with Mutable
 
   def reload(board: Board, rack: TileGroup) =
     additions.clear
+
+  def reloadTiles(rack: TileGroup) = ()
 }
 
 SwingUtilities.invokeLater(new RunClosure({ () =>
@@ -131,14 +134,14 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
 
   val selection = new TileSelection()
   val turnBuilder = new TestTurnBuilder()
-  val errorReporter = new ErrorReporter()
+  val messageReporter = new MessageReporter()
 
   val selectionView = new SelectionView(selection)
   val selectionEdit = new SelectionEdit(selection)
-  val errorView = new SwingErrorReporter(5000, errorReporter)
+  val messageView = new SwingMessageReporter(messageReporter)
 
   val config = new FileConfig("bin/letter-dist.txt", "bin/letter-score.txt", "bin/words.txt")
-  val boardView = new BoardView(config, selection, errorReporter, turnBuilder)
+  val boardView = new BoardView(config, selection, messageReporter, turnBuilder)
 
   turnBuilder.attachObserver(boardView.builderObserver)
   
@@ -147,7 +150,7 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
   // Get the initial part of the board set up
   boardView.builderObserver(turnBuilder)
 
-  main.getContentPane.add(errorView, BorderLayout.SOUTH)
+  main.getContentPane.add(messageView, BorderLayout.SOUTH)
   main.getContentPane.add(selectionView, BorderLayout.NORTH)
   main.getContentPane.add(selectionEdit, BorderLayout.EAST)
   main.getContentPane.add(modeSwitcher, BorderLayout.WEST)

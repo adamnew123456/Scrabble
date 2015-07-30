@@ -13,7 +13,7 @@ import org.adamnew123456.scrabble._
  * and allowing the player to move tiles on and off the game board by clicking
  * on it.
  */
-class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporter, builder: MutableTurnBuilder) extends JPanel {
+class BoardView(config: Config, selection: TileSelection, reporter: MessageReporter, builder: MutableTurnBuilder) extends JPanel {
   // Keep a hold on the GridLayout, since we need to resize it later when we
   // get an actual Board
   val gridLayout = new GridLayout(1, 1)
@@ -65,7 +65,7 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
             
           case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON3) =>
             builder.removeTiles(Set((col, row))) match {
-              case Failure(err) => reporter.report(err)
+              case Failure(err) => reporter.report(err.toString)
               case _            => ()
             }
           case _ => ()
@@ -112,7 +112,7 @@ class BoardView(config: Config, selection: TileSelection, reporter: ErrorReporte
               selection.clear
               
               builder.addTiles(Map((col, row) -> selected)) match {
-                case Failure(err) => reporter.report(err)
+                case Failure(err) => reporter.report(err.toString)
                 case _            => ()
               }
             }

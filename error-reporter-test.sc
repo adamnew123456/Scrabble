@@ -13,7 +13,7 @@ class ActionClosure(closure: ActionEvent => Unit) extends ActionListener {
   def actionPerformed(event: ActionEvent) = closure(event)
 }
 
-class ErrorEdit(reporter: ErrorReporter) extends JPanel {
+class MessageEdit(reporter: MessageReporter) extends JPanel {
   setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
 
   val input = new JTextField("")
@@ -22,7 +22,7 @@ class ErrorEdit(reporter: ErrorReporter) extends JPanel {
     val errorText = input.getText
     if (errorText != "") {
       println(s"Setting error: ${errorText}")
-      reporter.report(new Throwable(errorText))
+      reporter.report(errorText)
     }
   }))
 
@@ -35,17 +35,17 @@ SwingUtilities.invokeLater(new RunClosure({ () =>
   main.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
   main.getContentPane.setLayout(new BorderLayout())
 
-  val reporter = new ErrorReporter()
-  val errorView = new SwingErrorReporter(reporter)
-  val errorEdit = new ErrorEdit(reporter)
+  val reporter = new MessageReporter()
+  val messageView = new SwingMessageReporter(reporter)
+  val messageEdit = new MessageEdit(reporter)
 
   reporter.attachObserver {
-    case Some(err) => println(s"Error: $err")
+    case Some(err) => println(s"Message: $err")
     case None      => println("No error")
   }
 
-  main.getContentPane.add(errorView, BorderLayout.SOUTH)
-  main.getContentPane.add(errorEdit, BorderLayout.CENTER)
+  main.getContentPane.add(messageView, BorderLayout.SOUTH)
+  main.getContentPane.add(messageEdit, BorderLayout.CENTER)
 
   main.pack()
   main.setVisible(true)

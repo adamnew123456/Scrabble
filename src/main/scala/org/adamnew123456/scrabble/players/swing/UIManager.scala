@@ -11,23 +11,16 @@ import org.adamnew123456.scrabble.{ Board, Config, EndGame, TileGroup, TurnBuild
  * the Game.
  */
 class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
-  /**
-   * This is used just to display a message in the errorReporter.
-   */
-  case class Message(msg: String) extends Throwable {
-    override def toString = msg
-  }
-  
   val turnBuilder = new TurnBuilder(Board.empty(15, 15), TileGroup.fromTraversable(""))
   
   val boardSelection = new TileSelection()
   val replaceSelection = new MultiTileSelection()
-  val errorReporter = new ErrorReporter()
+  val messageReporter = new MessageReporter()
   
   val scoreView = new ScoreView()
   val rackView = new RackView(config, boardSelection, replaceSelection)
-  val boardView = new BoardView(config, boardSelection, errorReporter, turnBuilder)
-  val errorView = new SwingErrorReporter(errorReporter)
+  val boardView = new BoardView(config, boardSelection, messageReporter, turnBuilder)
+  val messageView = new SwingMessageReporter(messageReporter)
 
   turnBuilder.attachObserver(rackView.builderObserver)
   turnBuilder.attachObserver(boardView.builderObserver)
@@ -76,10 +69,10 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
   window.add(boardView)
   window.add(scoreView)
   window.add(submit)
-  window.add(errorView)
+  window.add(messageView)
   
   def gameError(error: Throwable) {
-    errorReporter.report(error)
+    messageReporter.report(error.toString)
   }
  
   def replaceTilesMode(tiles: TileGroup, maxReplace: Int, failReason: Option[Throwable]) {
@@ -87,7 +80,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     rackView.setMode(UIMode.Replace)
     mode = UIMode.Replace
 
-    errorReporter.report(Message("Replace your tiles"))
+    messageReporter.report("Replace your tiles")
     turnBuilder.reloadTiles(tiles)
     submit.setEnabled(true)
   }
@@ -97,13 +90,13 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     rackView.setMode(UIMode.Turn)
     mode = UIMode.Turn
 
-    errorReporter.report(Message("Do your turn"))
+    messageReporter.report("Do your turn")
     turnBuilder.reload(board, tiles)
     submit.setEnabled(true)
   }
   
   def otherPlayerTurn(player: String) {
-    errorReporter.report(Message(s"Current player: $player"))
+    messageReporter.report(s"Current player: $player")
   }
   
   def startTurn(board: Board, tiles: TileGroup, scores: Map[String, Int]) {
@@ -123,7 +116,7 @@ class UIManager(config: Config, returnQueue: BlockingQueue[UIMessage]) {
     turnBuilder.reload(end.board, TileGroup.fromTraversable(""))
     scoreView.update(end.scores)
     
-    errorReporter.report(Message(end.reason.toString))
+    messageReporter.report(s"End of game: ${end.reason.toString}")
     
     boardView.setMode(UIMode.Idle)
     rackView.setMode(UIMode.Idle)

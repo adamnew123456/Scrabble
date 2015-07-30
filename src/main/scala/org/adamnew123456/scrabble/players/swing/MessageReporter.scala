@@ -10,19 +10,19 @@ import org.adamnew123456.scrabble.BaseObservable
  * implementation, SwingErrorReporter, is harder to test, which is whythis
  * is factored into a separate interface. 
  */
-class ErrorReporter extends BaseObservable[Option[Throwable]] {
-  var error: Option[Throwable] = None
+class MessageReporter extends BaseObservable[Option[String]] {
+  var message: Option[String] = None
   
   def clear {
-    if (error.isDefined) {
-      error = None
-      notifyObservers(error)
+    if (message.isDefined) {
+      message = None
+      notifyObservers(message)
     }
   }
     
-  def report(err: Throwable) {
-    error = Some(err)
-    notifyObservers(error)
+  def report(msg: String) {
+    message = Some(msg)
+    notifyObservers(message)
   }
 }
 
@@ -33,7 +33,7 @@ class ErrorReporter extends BaseObservable[Option[Throwable]] {
  * When clicked, the current message is reset - until then, the current error 
  * is displayed.
  */
-class SwingErrorReporter(reporter: ErrorReporter) extends JLabel("OK") {
+class SwingMessageReporter(reporter: MessageReporter) extends JLabel() {
   addMouseListener(new ClosureButtonListener({ event: MouseEvent =>
     (event.getID, event.getButton) match {
       case (MouseEvent.MOUSE_CLICKED, MouseEvent.BUTTON1) =>
@@ -43,9 +43,9 @@ class SwingErrorReporter(reporter: ErrorReporter) extends JLabel("OK") {
   }))
   
   reporter.attachObserver {
-    case Some(error) => 
-      setText(error.toString)
+    case Some(message) => 
+      setText(message)
     case None        => 
-      setText("OK")
+      setText("")
   }
 }
