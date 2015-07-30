@@ -268,7 +268,7 @@ class RackView(config: Config, boardSelection: TileSelection, replaceSelection: 
    * clicks to the TileView.
    */
   private def makeEmptyTileView = {
-    val empty = new EmptyTileView()
+    val empty = new EmptyTileView(false)
     empty.addMouseListener(new ClosureButtonListener({ event: MouseEvent =>
       currentSuite.onEmptyTileClick(event)
     }))

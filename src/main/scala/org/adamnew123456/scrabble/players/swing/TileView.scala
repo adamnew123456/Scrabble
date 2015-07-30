@@ -90,8 +90,8 @@ class TileView(val tile: Char, val score: Int, var mode: TileMode) extends JPane
  * EmptyTileView is responsible for taking the place of a TileView, when no
  * tile needs to be displayed.
  */
-class EmptyTileView extends JPanel {
-  val bgColor = new Color(0x333333)
+class EmptyTileView(isCenter: Boolean) extends JPanel {
+  val bgColor = new Color(if (isCenter) 0x999966 else  0x333333)
   setMinimumSize(new Dimension(40, 40))
   
   protected override def paintComponent(canvas: Graphics) {

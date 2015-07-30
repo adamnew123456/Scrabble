@@ -22,7 +22,7 @@ class BoardView(config: Config, selection: TileSelection, reporter: MessageRepor
   private val tiles = HashMap[(Int, Int), JPanel]()
   
   // Start out with a blank widget, and fill it in as we get notifications
-  tiles((0, 0)) = new EmptyTileView()
+  tiles((0, 0)) = new EmptyTileView(true)
   updateContainer(1, 1)
   
   private var currentlyEnabled = true
@@ -101,8 +101,8 @@ class BoardView(config: Config, selection: TileSelection, reporter: MessageRepor
   /**
    * Creates a new blank tile at the given location.
    */
-  private def makeEmptyTile(col: Int, row: Int): EmptyTileView = {
-    val emptyTile = new EmptyTileView()
+  private def makeEmptyTile(col: Int, row: Int, center: Boolean): EmptyTileView = {
+    val emptyTile = new EmptyTileView(center)
     val handler = new ClosureButtonListener({ event: MouseEvent =>
       if (currentlyEnabled) {
         (event.getID, event.getButton) match {
@@ -170,7 +170,8 @@ class BoardView(config: Config, selection: TileSelection, reporter: MessageRepor
        */
       blanks.map {
         case (col, row) =>
-          val emptyTileView = makeEmptyTile(col, row)
+          val center = (row == board.width / 2 && col == board.height / 2)
+          val emptyTileView = makeEmptyTile(col, row, center)
           tiles((col, row)) = emptyTileView
       }
       
