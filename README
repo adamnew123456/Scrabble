@@ -1,0 +1,44 @@
+# Introduction
+
+This is an implementation of Scrabble, including the basic rules, some bots,
+and both a command-line and Swing front-end, in Scala. It does not include
+tile or word score multipliers, or blank tiles.
+
+This was more or less an exploration of designing a program in Scala, and
+how to make use of some of the standard APIs. 
+
+There are some design choices that I'm happy about:
+
+- The `NaiveMoveGenerator` is a fun use of the Stream API; it generates about
+  a thousand moves per second, and evaluates them all for the best scoring ones.
+- Writing the `TerminalCommandProcessor` really helped me grok how `for` 
+  comprehensions work as a control structure.
+- The UI parts seem well factored to me, and all perform their respective tasks
+  well.
+- All the word and tile lists are packed into the JAR file. Having never used
+  the resources API before, this was a nice discovery.
+- Just below a 1:1 test-to-code ratio for the core parts of the program.
+
+There are some I'm not:
+
+- Lots of mutable objects in use, especially in the UI parts.
+- Some choices make it so that, when a game ends, the state of the board reverts
+  to before the final turn. This means that final scores are inaccurate, and the
+  final board isn't what it should be.
+
+Overall, though, it's a fun game to play if you're like me and occasionally want
+to practice your Scrabble game without having to have the box set or having another
+person around willing to play.
+
+# Building
+
+To build the self-contained JAR for the GUI, you'll need SBT. You then need to run
+`sbt assemble`. The JAR will be located in `target/scala-2.11`, which you should
+be able to run without any issue.
+
+To run the command-line version, you can run `sbt build`. Then, you should run
+the SBT console without using JLine (if you're on `*`nix, the `console-without-jline.sh`
+script will do this for you), and `:paste game.sc`. You can alter how many bots you play
+against, and the turn ordering, by modifying the `game.sc` file.
+
+The controls for the command-line version can be found by typing `h`.
